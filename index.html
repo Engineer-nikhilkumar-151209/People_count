@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Room People Counter</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            max-width: 500px;
+            width: 100%;
+        }
+
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 30px;
+            font-size: 2em;
+        }
+
+        .status {
+            text-align: center;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+            font-weight: bold;
+        }
+
+        .status.disconnected {
+            background: #fee;
+            color: #c33;
+        }
+
+        .status.connected {
+            background: #efe;
+            color: #3c3;
+        }
+
+        .counter-display {
+            text-align: center;
+            margin: 40px 0;
+        }
+
+        .counter-label {
+            font-size: 1.2em;
+            color: #666;
+            margin-bottom: 10px;
+        }
+
+        .counter-value {
+            font-size: 5em;
+            font-weight: bold;
+            color: #667eea;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin: 30px 0;
+        }
+
+        .stat-box {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+        }
+
+        .stat-label {
+            font-size: 0.9em;
+            color: #666;
+            margin-bottom: 5px;
+        }
+
+        .stat-value {
+            font-size: 2em;
+            font-weight: bold;
+            color: #333;
+        }
+
+        .stat-value.in {
+            color: #28a745;
+        }
+
+        .stat-value.out {
+            color: #dc3545;
+        }
+
+        .buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 30px;
+        }
+
+        button {
+            flex: 1;
+            padding: 15px;
+            border: none;
+            border-radius: 10px;
+            font-size: 1em;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        .btn-connect {
+            background: #667eea;
+            color: white;
+        }
+
+        .btn-reset {
+            background: #dc3545;
+            color: white;
+        }
+
+        .btn-refresh {
+            background: #28a745;
+            color: white;
+        }
+
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .info {
+            margin-top: 20px;
+            padding: 15px;
+            background: #e7f3ff;
+            border-radius: 10px;
+            font-size: 0.9em;
+            color: #004085;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚪 Room Occupancy</h1>
+        
+        <div class="status disconnected" id="status">
+            ⚠️ Disconnected
+        </div>
+
+        <div class="counter-display">
+            <div class="counter-label">People in Room</div>
+            <div class="counter-value" id="peopleCount">0</div>
+        </div>
+
+        <div class="stats">
+            <div class="stat-box">
+                <div class="stat-label">Total Entered</div>
+                <div class="stat-value in" id="totalIn">0</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-label">Total Exited</div>
+                <div class="stat-value out" id="totalOut">0</div>
+            </div>
+        </div>
+
+        <div class="buttons">
+            <button class="btn-connect" id="connectBtn" onclick="connectBluetooth()">
+                Connect Bluetooth
+            </button>
+        </div>
+
+        <div class="buttons">
+            <button class="btn-refresh" id="refreshBtn" onclick="refreshCount()" disabled>
+                Refresh
+            </button>
+            <button class="btn-reset" id="resetBtn" onclick="resetCount()" disabled>
+                Reset Counter
+            </button>
+        </div>
+
+        <div class="info">
+            <strong>Instructions:</strong><br>
+            1. Click "Connect Bluetooth" to pair with Arduino<br>
+            2. Select your HC-05/HC-06 device<br>
+            3. Counter will update automatically
+        </div>
+    </div>
+
+    <script>
+        let bluetoothDevice;
+        let characteristic;
+        let currentCount = 0;
+        let totalEntered = 0;
+        let totalExited = 0;
+
+        async function connectBluetooth() {
+            try {
+                const device = await navigator.bluetooth.requestDevice({
+                    filters: [{ services: ['0000ffe0-0000-1000-8000-00805f9b34fb'] }],
+                    optionalServices: ['0000ffe0-0000-1000-8000-00805f9b34fb']
+                });
+
+                bluetoothDevice = device;
+                const server = await device.gatt.connect();
+                const service = await server.getPrimaryService('0000ffe0-0000-1000-8000-00805f9b34fb');
+                characteristic = await service.getCharacteristic('0000ffe1-0000-1000-8000-00805f9b34fb');
+
+                await characteristic.startNotifications();
+                characteristic.addEventListener('characteristicvaluechanged', handleData);
+
+                updateStatus(true);
+                document.getElementById('refreshBtn').disabled = false;
+                document.getElementById('resetBtn').disabled = false;
+                
+                // Request initial count
+                await sendCommand('GET');
+            } catch (error) {
+                console.error('Bluetooth connection failed:', error);
+                alert('Failed to connect. Make sure Bluetooth is enabled and the device is nearby.');
+            }
+        }
+
+        function handleData(event) {
+            const value = new TextDecoder().decode(event.target.value);
+            console.log('Received:', value);
+            
+            if (value.includes('COUNT:')) {
+                const newCount = parseInt(value.split(':')[1]);
+                updateCount(newCount);
+            }
+        }
+
+        function updateCount(newCount) {
+            const previousCount = currentCount;
+            currentCount = newCount;
+            
+            if (newCount > previousCount) {
+                totalEntered += (newCount - previousCount);
+            } else if (newCount < previousCount) {
+                totalExited += (previousCount - newCount);
+            }
+            
+            document.getElementById('peopleCount').textContent = currentCount;
+            document.getElementById('totalIn').textContent = totalEntered;
+            document.getElementById('totalOut').textContent = totalExited;
+        }
+
+        async function sendCommand(command) {
+            if (!characteristic) return;
+            
+            const encoder = new TextEncoder();
+            await characteristic.writeValue(encoder.encode(command + '\n'));
+        }
+
+        async function refreshCount() {
+            await sendCommand('GET');
+        }
+
+        async function resetCount() {
+            if (confirm('Are you sure you want to reset the counter?')) {
+                await sendCommand('RESET');
+                totalEntered = 0;
+                totalExited = 0;
+                document.getElementById('totalIn').textContent = 0;
+                document.getElementById('totalOut').textContent = 0;
+            }
+        }
+
+        function updateStatus(connected) {
+            const statusEl = document.getElementById('status');
+            if (connected) {
+                statusEl.textContent = '✅ Connected';
+                statusEl.className = 'status connected';
+            } else {
+                statusEl.textContent = '⚠️ Disconnected';
+                statusEl.className = 'status disconnected';
+            }
+        }
+    </script>
+</body>
+</html>
