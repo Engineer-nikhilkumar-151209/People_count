@@ -1,98 +1,74 @@
 //code by Engineer-nikhilkumar-151209
-// People Counter using IR Sensors and Bluetooth
-// IR Sensor 1: Entry sensor (outside)
-// IR Sensor 2: Exit sensor (inside)
+#include <SoftwareSerial.h>
 
-const int entrySensor = 2;  // IR sensor at entry
-const int exitSensor = 3;   // IR sensor at exit
+SoftwareSerial BTSerial(2, 3); // TX, RX pins for Bluetooth
 
-int peopleCount = 0;
-bool sensor1Triggered = false;
-bool sensor2Triggered = false;
-bool personEntering = false;
-bool personExiting = false;
+const int sensorA = 4;
+const int sensorB = 5;
+const int ledPin = 13;
 
-unsigned long lastTriggerTime = 0;
-const unsigned long debounceDelay = 1000; // 1 second debounce
+int count = 0;
+int inCount = 0;
+int outCount = 0;
+
+bool flagA = false;
+bool flagB = false;
 
 void setup() {
-  Serial.begin(9600); // For Bluetooth communication
-  
-  pinMode(entrySensor, INPUT);
-  pinMode(exitSensor, INPUT);
-  
-  Serial.println("START");
-  Serial.print("COUNT:");
-  Serial.println(peopleCount);
+  pinMode(sensorA, INPUT);
+  pinMode(sensorB, INPUT);
+  pinMode(ledPin, OUTPUT);
+  Serial.begin(9600);
+  BTSerial.begin(9600);
+  printDisplay(); // Run once at start
 }
 
 void loop() {
-  int entry = digitalRead(entrySensor);
-  int exit = digitalRead(exitSensor);
-  
-  unsigned long currentTime = millis();
-  
-  // IR sensors output LOW when object detected
-  // Entry detection sequence
-  if (entry == LOW && !sensor1Triggered && !personExiting) {
-    sensor1Triggered = true;
-    personEntering = true;
-    lastTriggerTime = currentTime;
+  // Logic for IN (A then B)
+  if (digitalRead(sensorA) == LOW && !flagA && !flagB) {
+    flagA = true;
+    delay(100); 
   }
-  
-  if (sensor1Triggered && exit == LOW && personEntering) {
-    sensor2Triggered = true;
-    peopleCount++;
-    sendCount();
-    resetSensors();
+  if (digitalRead(sensorB) == LOW && flagA) {
+    inCount++; count++;
+    flagA = false;
+    blinkLED();
+    printDisplay();
+    delay(500); 
   }
-  
-  // Exit detection sequence
-  if (exit == LOW && !sensor2Triggered && !personEntering) {
-    sensor2Triggered = true;
-    personExiting = true;
-    lastTriggerTime = currentTime;
+
+  // Logic for OUT (B then A)
+  if (digitalRead(sensorB) == LOW && !flagB && !flagA) {
+    flagB = true;
+    delay(100);
   }
-  
-  if (sensor2Triggered && entry == LOW && personExiting) {
-    sensor1Triggered = true;
-    if (peopleCount > 0) {
-      peopleCount--;
-    }
-    sendCount();
-    resetSensors();
+  if (digitalRead(sensorA) == LOW && flagB) {
+    outCount++; count = max(0, count - 1);
+    flagB = false;
+    blinkLED();
+    printDisplay();
+    delay(500);
   }
-  
-  // Reset if sequence not completed within timeout
-  if ((sensor1Triggered || sensor2Triggered) && 
-      (currentTime - lastTriggerTime > 2000)) {
-    resetSensors();
-  }
-  
-  // Listen for commands from Bluetooth
-  if (Serial.available() > 0) {
-    String command = Serial.readStringUntil('\n');
-    command.trim();
-    
-    if (command == "GET") {
-      sendCount();
-    } else if (command == "RESET") {
-      peopleCount = 0;
-      sendCount();
-    }
-  }
-  
-  delay(50);
 }
 
-void sendCount() {
-  Serial.print("COUNT:");
-  Serial.println(peopleCount);
+void blinkLED() {
+  digitalWrite(ledPin, HIGH);
+  delay(100);
+  digitalWrite(ledPin, LOW);
 }
 
-void resetSensors() {
-  sensor1Triggered = false;
-  sensor2Triggered = false;
-  personEntering = false;
-  personExiting = false;
+// THIS IS THE ONLY VERSION OF printDisplay() YOU SHOULD HAVE
+void printDisplay() {
+  // 1. Clean view for Serial Monitor
+  Serial.print("IN: "); Serial.print(inCount);
+  Serial.print(" | OUT: "); Serial.print(outCount);
+  Serial.print(" | TOTAL: "); Serial.println(count);
+
+  // 2. Data for Web Dashboard (Comma Separated)
+  BTSerial.print(inCount);
+  BTSerial.print(",");
+  BTSerial.print(outCount);
+  BTSerial.print(",");
+  BTSerial.println(count); 
 }
+
