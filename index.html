@@ -3,1045 +3,690 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>WA Blast — Bulk WhatsApp Sender</title>
-<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<title>WhatsApp Bulk Sender – Central Pharmacy</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
 <style>
   :root {
     --green: #25D366;
-    --green-dark: #128C7E;
-    --green-light: #DCF8C6;
-    --bg: #0a0f0d;
-    --surface: #111a14;
-    --surface2: #172019;
-    --border: #1e3324;
-    --text: #e8f5e9;
-    --muted: #5a7a62;
-    --accent: #39ff88;
-    --warn: #ffb930;
-    --danger: #ff5252;
-    --radius: 14px;
+    --dark-green: #128C7E;
+    --light-green: #DCF8C6;
+    --bg: #0f1117;
+    --surface: #1a1f2e;
+    --surface2: #222840;
+    --border: #2e3650;
+    --text: #e8eaf6;
+    --muted: #7b82a0;
+    --accent: #25D366;
   }
-  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
   body {
+    font-family: 'DM Sans', sans-serif;
     background: var(--bg);
     color: var(--text);
-    font-family: 'DM Mono', monospace;
     min-height: 100vh;
-    overflow-x: hidden;
   }
 
-  /* Ambient background */
-  body::before {
-    content: '';
-    position: fixed;
-    top: -200px; left: -200px;
-    width: 600px; height: 600px;
-    background: radial-gradient(circle, rgba(37,211,102,0.07) 0%, transparent 70%);
-    pointer-events: none;
-    z-index: 0;
-  }
-  body::after {
-    content: '';
-    position: fixed;
-    bottom: -200px; right: -200px;
-    width: 500px; height: 500px;
-    background: radial-gradient(circle, rgba(57,255,136,0.05) 0%, transparent 70%);
-    pointer-events: none;
-    z-index: 0;
-  }
-
-  .app {
-    position: relative;
-    z-index: 1;
-    max-width: 860px;
-    margin: 0 auto;
-    padding: 40px 20px 80px;
-  }
-
-  /* Header */
   header {
+    background: linear-gradient(135deg, #0d1f16 0%, #0f2d1e 60%, #0a1a28 100%);
+    padding: 22px 32px;
     display: flex;
     align-items: center;
-    gap: 16px;
-    margin-bottom: 48px;
+    gap: 14px;
+    border-bottom: 1px solid #1e3a2a;
   }
-  .logo {
-    width: 52px; height: 52px;
-    background: linear-gradient(135deg, var(--green), var(--green-dark));
-    border-radius: 16px;
+
+  .wa-icon {
+    width: 44px; height: 44px;
+    background: var(--green);
+    border-radius: 50%;
     display: flex; align-items: center; justify-content: center;
-    font-size: 26px;
-    box-shadow: 0 0 32px rgba(37,211,102,0.3);
+    font-size: 22px;
     flex-shrink: 0;
   }
-  .header-text h1 {
+
+  header h1 {
     font-family: 'Syne', sans-serif;
-    font-size: 1.8rem;
+    font-size: 1.4rem;
     font-weight: 800;
-    letter-spacing: -0.03em;
-    line-height: 1;
-  }
-  .header-text h1 span { color: var(--accent); }
-  .header-text p {
-    font-size: 0.72rem;
-    color: var(--muted);
-    margin-top: 4px;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
+    color: #fff;
+    letter-spacing: -0.3px;
   }
 
-  /* Steps */
-  .steps {
-    display: flex;
-    gap: 8px;
-    margin-bottom: 36px;
-  }
-  .step {
-    flex: 1;
-    height: 3px;
-    background: var(--border);
-    border-radius: 99px;
-    transition: background 0.4s;
-  }
-  .step.active { background: var(--accent); }
-  .step.done { background: var(--green); }
+  header p { font-size: 0.8rem; color: #7fba97; margin-top: 2px; }
 
-  /* Cards */
-  .card {
+  .container { max-width: 1200px; margin: 0 auto; padding: 28px 20px; }
+
+  .layout { display: grid; grid-template-columns: 1fr 380px; gap: 24px; }
+
+  /* ---- Contacts Panel ---- */
+  .panel {
     background: var(--surface);
     border: 1px solid var(--border);
-    border-radius: var(--radius);
-    padding: 28px;
-    margin-bottom: 20px;
-    transition: border-color 0.3s;
-  }
-  .card:hover { border-color: #2a4a33; }
-  .card-header {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    margin-bottom: 20px;
-  }
-  .step-badge {
-    width: 28px; height: 28px;
-    border-radius: 8px;
-    background: var(--surface2);
-    border: 1px solid var(--border);
-    display: flex; align-items: center; justify-content: center;
-    font-size: 0.7rem;
-    color: var(--accent);
-    font-weight: 500;
-    flex-shrink: 0;
-  }
-  .card-header h2 {
-    font-family: 'Syne', sans-serif;
-    font-size: 1rem;
-    font-weight: 700;
-    letter-spacing: -0.01em;
-  }
-  .card-header .badge-info {
-    margin-left: auto;
-    font-size: 0.68rem;
-    color: var(--muted);
-    background: var(--surface2);
-    border: 1px solid var(--border);
-    padding: 3px 10px;
-    border-radius: 99px;
+    border-radius: 14px;
+    overflow: hidden;
   }
 
-  /* Drop zone */
-  .dropzone {
-    border: 2px dashed var(--border);
-    border-radius: 12px;
-    padding: 40px 20px;
-    text-align: center;
-    cursor: pointer;
-    transition: all 0.3s;
+  .panel-header {
+    padding: 16px 20px;
     background: var(--surface2);
-    position: relative;
-  }
-  .dropzone:hover, .dropzone.dragover {
-    border-color: var(--accent);
-    background: rgba(57,255,136,0.04);
-  }
-  .dropzone input[type=file] {
-    position: absolute; inset: 0;
-    opacity: 0; cursor: pointer;
-    width: 100%; height: 100%;
-  }
-  .drop-icon { font-size: 2.2rem; margin-bottom: 10px; }
-  .drop-text { font-size: 0.85rem; color: var(--muted); }
-  .drop-text strong { color: var(--text); }
-  .drop-hint { font-size: 0.68rem; color: var(--muted); margin-top: 6px; opacity: 0.7; }
-
-  /* Column mapper */
-  .column-mapper {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 14px;
-    margin-top: 16px;
-  }
-  .field-group label {
-    font-size: 0.68rem;
-    color: var(--muted);
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    display: block;
-    margin-bottom: 6px;
-  }
-  select, textarea, input[type=text], input[type=number] {
-    width: 100%;
-    background: var(--surface2);
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    padding: 10px 14px;
-    color: var(--text);
-    font-family: 'DM Mono', monospace;
-    font-size: 0.82rem;
-    outline: none;
-    transition: border-color 0.2s;
-    appearance: none;
-  }
-  select:focus, textarea:focus, input:focus {
-    border-color: var(--accent);
-  }
-  select option { background: #111a14; }
-
-  /* Preview table */
-  .preview-wrap {
-    overflow-x: auto;
-    border-radius: 10px;
-    border: 1px solid var(--border);
-    margin-top: 16px;
-    max-height: 220px;
-    overflow-y: auto;
-  }
-  table {
-    width: 100%;
-    border-collapse: collapse;
-    font-size: 0.75rem;
-  }
-  thead th {
-    background: var(--surface2);
-    padding: 10px 14px;
-    text-align: left;
-    color: var(--accent);
-    font-size: 0.65rem;
-    text-transform: uppercase;
-    letter-spacing: 0.1em;
-    position: sticky; top: 0;
     border-bottom: 1px solid var(--border);
-  }
-  tbody tr { border-bottom: 1px solid var(--border); }
-  tbody tr:last-child { border: none; }
-  tbody tr:nth-child(even) { background: rgba(255,255,255,0.015); }
-  tbody td { padding: 9px 14px; color: var(--muted); }
-  tbody td:first-child { color: var(--text); }
-  .valid-phone { color: var(--green) !important; }
-  .invalid-phone { color: var(--danger) !important; }
-
-  /* Message composer */
-  .message-area {
-    position: relative;
-  }
-  textarea {
-    resize: vertical;
-    min-height: 130px;
-    line-height: 1.6;
-  }
-  .variable-chips {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 6px;
-    margin-top: 10px;
-  }
-  .chip {
-    background: rgba(37,211,102,0.1);
-    border: 1px solid rgba(37,211,102,0.25);
-    color: var(--green);
-    font-size: 0.68rem;
-    padding: 3px 10px;
-    border-radius: 99px;
-    cursor: pointer;
-    transition: all 0.2s;
-    font-family: 'DM Mono', monospace;
-  }
-  .chip:hover {
-    background: rgba(37,211,102,0.2);
-    border-color: var(--green);
-  }
-  .char-count {
-    text-align: right;
-    font-size: 0.65rem;
-    color: var(--muted);
-    margin-top: 6px;
-  }
-
-  /* Message preview */
-  .msg-preview {
-    background: var(--surface2);
-    border-radius: 12px;
-    padding: 16px;
-    margin-top: 14px;
-    border: 1px solid var(--border);
-  }
-  .msg-preview-label {
-    font-size: 0.65rem;
-    color: var(--muted);
-    text-transform: uppercase;
-    letter-spacing: 0.1em;
-    margin-bottom: 10px;
-  }
-  .bubble {
-    background: var(--green-light);
-    color: #1a3c2a;
-    border-radius: 12px 12px 4px 12px;
-    padding: 12px 16px;
-    font-size: 0.82rem;
-    line-height: 1.6;
-    max-width: 80%;
-    margin-left: auto;
-    white-space: pre-wrap;
-    word-break: break-word;
-  }
-
-  /* Settings row */
-  .settings-row {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 14px;
-  }
-
-  /* Action bar */
-  .action-bar {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    flex-wrap: wrap;
-    margin-top: 24px;
-  }
-  .btn {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    padding: 12px 24px;
-    border-radius: 10px;
-    font-family: 'Syne', sans-serif;
-    font-size: 0.88rem;
-    font-weight: 700;
-    cursor: pointer;
-    border: none;
-    transition: all 0.2s;
-    text-decoration: none;
-    letter-spacing: 0.01em;
-  }
-  .btn-primary {
-    background: linear-gradient(135deg, var(--green), var(--green-dark));
-    color: white;
-    box-shadow: 0 4px 20px rgba(37,211,102,0.25);
-  }
-  .btn-primary:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 6px 28px rgba(37,211,102,0.35);
-  }
-  .btn-primary:disabled {
-    opacity: 0.4;
-    cursor: not-allowed;
-    transform: none;
-    box-shadow: none;
-  }
-  .btn-outline {
-    background: transparent;
-    color: var(--muted);
-    border: 1px solid var(--border);
-  }
-  .btn-outline:hover { border-color: var(--muted); color: var(--text); }
-
-  .stats {
-    margin-left: auto;
-    text-align: right;
-    font-size: 0.72rem;
-    color: var(--muted);
-  }
-  .stats strong { color: var(--accent); font-size: 1rem; }
-
-  /* Queue */
-  .queue-section { margin-top: 28px; }
-  .queue-header {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    margin-bottom: 14px;
+    gap: 10px;
+    flex-wrap: wrap;
   }
-  .queue-header h3 {
+
+  .panel-title {
     font-family: 'Syne', sans-serif;
-    font-size: 0.9rem;
     font-weight: 700;
+    font-size: 0.95rem;
+    color: var(--text);
   }
-  .progress-bar {
-    background: var(--border);
-    border-radius: 99px;
-    height: 6px;
-    overflow: hidden;
-    margin-bottom: 16px;
+
+  .badge {
+    background: var(--green);
+    color: #000;
+    font-size: 0.72rem;
+    font-weight: 700;
+    padding: 2px 9px;
+    border-radius: 20px;
   }
-  .progress-fill {
-    height: 100%;
-    background: linear-gradient(90deg, var(--green-dark), var(--accent));
-    border-radius: 99px;
-    transition: width 0.3s;
-    width: 0%;
+
+  .search-bar {
+    padding: 10px 20px;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface);
   }
-  .queue-list {
+
+  .search-bar input {
+    width: 100%;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 8px 14px;
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.85rem;
+    outline: none;
+  }
+
+  .search-bar input:focus { border-color: var(--green); }
+
+  .select-bar {
+    padding: 8px 20px;
+    background: var(--surface2);
+    border-bottom: 1px solid var(--border);
     display: flex;
-    flex-direction: column;
-    gap: 8px;
-    max-height: 340px;
+    gap: 10px;
+    align-items: center;
+    font-size: 0.8rem;
+  }
+
+  .select-bar button {
+    background: none;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--muted);
+    padding: 3px 10px;
+    cursor: pointer;
+    font-size: 0.78rem;
+    transition: all .2s;
+  }
+
+  .select-bar button:hover { border-color: var(--green); color: var(--green); }
+
+  .selected-count { color: var(--green); font-weight: 600; margin-left: auto; }
+
+  .contacts-list {
+    max-height: 480px;
     overflow-y: auto;
   }
-  .queue-item {
+
+  .contacts-list::-webkit-scrollbar { width: 5px; }
+  .contacts-list::-webkit-scrollbar-track { background: var(--surface); }
+  .contacts-list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+  .contact-item {
     display: flex;
     align-items: center;
     gap: 12px;
-    background: var(--surface2);
+    padding: 11px 20px;
+    border-bottom: 1px solid var(--border);
+    cursor: pointer;
+    transition: background .15s;
+  }
+
+  .contact-item:hover { background: var(--surface2); }
+  .contact-item.selected { background: #0d2218; }
+
+  .contact-item input[type=checkbox] {
+    accent-color: var(--green);
+    width: 16px; height: 16px;
+    flex-shrink: 0;
+  }
+
+  .avatar {
+    width: 36px; height: 36px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #1a4a30, #0d2d20);
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Syne', sans-serif;
+    font-weight: 700;
+    font-size: 0.78rem;
+    color: var(--green);
+    flex-shrink: 0;
+  }
+
+  .contact-info { flex: 1; min-width: 0; }
+  .contact-name { font-size: 0.88rem; font-weight: 500; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .contact-phone { font-size: 0.76rem; color: var(--muted); margin-top: 1px; }
+
+  .contact-tags { display: flex; gap: 4px; flex-wrap: wrap; }
+  .tag {
+    font-size: 0.67rem;
+    padding: 1px 6px;
+    border-radius: 4px;
+    font-weight: 600;
+    letter-spacing: 0.2px;
+  }
+  .tag-kia { background: #1a2a40; color: #5b9bd5; }
+  .tag-raxa { background: #2a1a30; color: #c580e0; }
+  .tag-bigbasket { background: #2a1a10; color: #e0a050; }
+
+  /* ---- Right Panel ---- */
+  .right-panel { display: flex; flex-direction: column; gap: 18px; }
+
+  .message-box { flex: 1; }
+
+  textarea#msgTemplate {
+    width: 100%;
+    min-height: 180px;
+    background: var(--bg);
     border: 1px solid var(--border);
     border-radius: 10px;
-    padding: 12px 16px;
-    transition: all 0.3s;
+    padding: 14px;
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.88rem;
+    line-height: 1.6;
+    resize: vertical;
+    outline: none;
+    transition: border-color .2s;
+  }
+
+  textarea#msgTemplate:focus { border-color: var(--green); }
+
+  .hint {
+    font-size: 0.75rem;
+    color: var(--muted);
+    margin-top: 7px;
+    line-height: 1.5;
+  }
+
+  .hint code {
+    background: var(--surface2);
+    padding: 1px 5px;
+    border-radius: 4px;
+    color: var(--green);
     font-size: 0.78rem;
   }
-  .queue-item.sending { border-color: var(--warn); animation: pulse 1s infinite; }
-  .queue-item.sent { border-color: var(--green); opacity: 0.7; }
-  .queue-item.failed { border-color: var(--danger); }
-  .queue-item.pending { opacity: 0.5; }
-  @keyframes pulse {
-    0%,100% { box-shadow: 0 0 0 0 rgba(255,185,48,0); }
-    50% { box-shadow: 0 0 0 4px rgba(255,185,48,0.15); }
-  }
-  .q-status { font-size: 1rem; flex-shrink: 0; }
-  .q-phone { color: var(--accent); font-weight: 500; flex: 1; }
-  .q-name { color: var(--muted); }
-  .q-action a {
-    color: var(--green);
-    font-size: 0.7rem;
-    text-decoration: none;
-    padding: 3px 10px;
-    border: 1px solid rgba(37,211,102,0.3);
-    border-radius: 6px;
-    transition: all 0.2s;
-  }
-  .q-action a:hover {
-    background: rgba(37,211,102,0.1);
-    border-color: var(--green);
-  }
-  .q-timer { font-size: 0.65rem; color: var(--muted); }
 
-  /* Toast */
-  .toast {
-    position: fixed;
-    bottom: 30px; right: 30px;
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    padding: 14px 20px;
-    font-size: 0.8rem;
-    max-width: 320px;
-    box-shadow: 0 8px 32px rgba(0,0,0,0.5);
-    transform: translateY(20px);
-    opacity: 0;
-    transition: all 0.3s;
-    z-index: 1000;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-  }
-  .toast.show { transform: translateY(0); opacity: 1; }
-  .toast.success { border-color: var(--green); }
-  .toast.error { border-color: var(--danger); }
-  .toast.warn { border-color: var(--warn); }
-
-  /* Notice */
-  .notice {
-    background: rgba(255,185,48,0.06);
-    border: 1px solid rgba(255,185,48,0.2);
-    border-radius: 10px;
+  /* Preview */
+  .preview-bubble {
+    background: var(--light-green);
+    color: #111;
+    border-radius: 12px 12px 4px 12px;
     padding: 12px 16px;
-    font-size: 0.72rem;
-    color: var(--warn);
+    font-size: 0.85rem;
     line-height: 1.6;
-    margin-bottom: 20px;
-  }
-  .notice strong { display: block; margin-bottom: 4px; }
-
-  /* Info row */
-  .info-grid {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 12px;
-    margin-bottom: 20px;
-  }
-  .info-tile {
-    background: var(--surface2);
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    padding: 14px 16px;
-    text-align: center;
-  }
-  .info-tile .val {
-    font-family: 'Syne', sans-serif;
-    font-size: 1.6rem;
-    font-weight: 800;
-    color: var(--accent);
-    line-height: 1;
-  }
-  .info-tile .lbl {
-    font-size: 0.62rem;
-    color: var(--muted);
-    text-transform: uppercase;
-    letter-spacing: 0.1em;
+    min-height: 60px;
+    white-space: pre-wrap;
+    word-break: break-word;
+    position: relative;
     margin-top: 4px;
   }
 
-  /* Scrollbar */
-  ::-webkit-scrollbar { width: 4px; height: 4px; }
-  ::-webkit-scrollbar-track { background: var(--surface); }
-  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 99px; }
+  .preview-bubble::after {
+    content: '';
+    position: absolute;
+    bottom: 0; right: -8px;
+    border: 8px solid transparent;
+    border-bottom-color: var(--light-green);
+    border-right: none;
+  }
 
-  .hidden { display: none !important; }
+  /* Send button */
+  .send-btn {
+    width: 100%;
+    padding: 14px;
+    background: var(--green);
+    border: none;
+    border-radius: 10px;
+    color: #000;
+    font-family: 'Syne', sans-serif;
+    font-weight: 700;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: all .2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+  }
 
-  @media (max-width: 600px) {
-    .column-mapper, .settings-row, .info-grid { grid-template-columns: 1fr; }
-    .steps { gap: 4px; }
-    header h1 { font-size: 1.4rem; }
+  .send-btn:hover { background: #20c55a; transform: translateY(-1px); }
+  .send-btn:disabled { background: #2e4a38; color: #5a7a62; cursor: not-allowed; transform: none; }
+
+  /* Progress */
+  .progress-section { display: none; }
+  .progress-section.active { display: block; }
+
+  .progress-bar-wrap {
+    background: var(--surface2);
+    border-radius: 8px;
+    height: 8px;
+    overflow: hidden;
+    margin: 10px 0;
+  }
+
+  .progress-bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--green), #20e070);
+    border-radius: 8px;
+    transition: width .4s;
+    width: 0%;
+  }
+
+  .progress-text { font-size: 0.82rem; color: var(--muted); }
+
+  .log-box {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 14px;
+    max-height: 150px;
+    overflow-y: auto;
+    font-size: 0.78rem;
+    font-family: monospace;
+    color: #7fba97;
+    margin-top: 10px;
+  }
+
+  .log-entry { padding: 2px 0; border-bottom: 1px solid #151b2a; }
+  .log-entry.err { color: #e07070; }
+
+  /* Add contact */
+  .add-contact-row {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .add-contact-row input {
+    flex: 1;
+    min-width: 100px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 8px 12px;
+    color: var(--text);
+    font-size: 0.83rem;
+    font-family: 'DM Sans', sans-serif;
+    outline: none;
+  }
+
+  .add-contact-row input:focus { border-color: var(--green); }
+
+  .add-contact-row button {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--green);
+    padding: 8px 14px;
+    cursor: pointer;
+    font-size: 0.83rem;
+    font-weight: 600;
+    transition: all .2s;
+    white-space: nowrap;
+  }
+
+  .add-contact-row button:hover { background: #1a3a28; }
+
+  label.field-label {
+    display: block;
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    margin-bottom: 7px;
+  }
+
+  .delay-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 0.82rem;
+    color: var(--muted);
+  }
+
+  .delay-row input[type=range] { accent-color: var(--green); width: 100px; }
+  .delay-row span { color: var(--green); font-weight: 600; min-width: 50px; }
+
+  @media (max-width: 780px) {
+    .layout { grid-template-columns: 1fr; }
+    .contacts-list { max-height: 320px; }
   }
 </style>
 </head>
 <body>
-<div class="app">
 
-  <header>
-    <div class="logo">💬</div>
-    <div class="header-text">
-      <h1>WA<span>Blast</span></h1>
-      <p>Bulk WhatsApp Sender · No Number Saving Required</p>
-    </div>
-  </header>
-
-  <div class="steps">
-    <div class="step active" id="step1"></div>
-    <div class="step" id="step2"></div>
-    <div class="step" id="step3"></div>
+<header>
+  <div class="wa-icon">💬</div>
+  <div>
+    <h1>WhatsApp Bulk Sender</h1>
+    <p>Central Pharmacy · Personalized Messages</p>
   </div>
+</header>
 
-  <div class="notice">
-    <strong>⚠️ How this works</strong>
-    This tool uses <strong>wa.me links</strong> (WhatsApp Click-to-Chat) — no number saving needed. Each message opens WhatsApp with the pre-filled text. Works on Android, iOS, and Web. For true automation, use the WhatsApp Business API.
-  </div>
+<div class="container">
+  <div class="layout">
 
-  <!-- STEP 1: Upload Excel -->
-  <div class="card" id="card-upload">
-    <div class="card-header">
-      <div class="step-badge">01</div>
-      <h2>Upload Excel / CSV File</h2>
-      <span class="badge-info">.xlsx · .xls · .csv</span>
-    </div>
-
-    <div class="dropzone" id="dropzone">
-      <input type="file" id="fileInput" accept=".xlsx,.xls,.csv">
-      <div class="drop-icon">📂</div>
-      <div class="drop-text"><strong>Drop file here</strong> or click to browse</div>
-      <div class="drop-hint">Excel or CSV with phone numbers and contact info</div>
-    </div>
-
-    <div id="column-config" class="hidden">
-      <div class="column-mapper" style="margin-top:18px;">
-        <div class="field-group">
-          <label>📱 Phone Number Column *</label>
-          <select id="phoneCol"></select>
+    <!-- LEFT: Contacts -->
+    <div>
+      <div class="panel">
+        <div class="panel-header">
+          <span class="panel-title">Contacts</span>
+          <span class="badge" id="totalBadge">0</span>
+          <div style="margin-left:auto;display:flex;gap:8px;align-items:center;">
+            <label class="field-label" style="margin:0">Add new:</label>
+          </div>
         </div>
-        <div class="field-group">
-          <label>👤 Name Column (optional)</label>
-          <select id="nameCol"></select>
+
+        <!-- Add contact -->
+        <div style="padding:12px 20px;border-bottom:1px solid var(--border);background:var(--surface2);">
+          <div class="add-contact-row">
+            <input type="text" id="newName" placeholder="Full Name" />
+            <input type="tel" id="newPhone" placeholder="Phone (10 digits)" maxlength="12" />
+            <input type="text" id="newTag" placeholder="Tag (optional)" style="max-width:100px;" />
+            <button onclick="addContact()">+ Add</button>
+          </div>
+        </div>
+
+        <div class="search-bar">
+          <input type="text" id="searchInput" placeholder="🔍  Search contacts..." oninput="renderContacts()" />
+        </div>
+
+        <div class="select-bar">
+          <button onclick="selectAll()">Select All</button>
+          <button onclick="deselectAll()">Deselect All</button>
+          <span class="selected-count" id="selectedCount">0 selected</span>
+        </div>
+
+        <div class="contacts-list" id="contactsList"></div>
+      </div>
+    </div>
+
+    <!-- RIGHT: Message & Send -->
+    <div class="right-panel">
+
+      <div class="panel">
+        <div class="panel-header">
+          <span class="panel-title">Message Template</span>
+        </div>
+        <div style="padding:16px;">
+          <label class="field-label">Template (use {name} for personalization)</label>
+          <textarea id="msgTemplate" placeholder="Type your message here...
+Use {name} where you want the contact's name to appear.
+
+Example:
+Hello {name}, this is a reminder from Central Pharmacy. Please collect your medicines. Thank you!">Hello {name}, this is a reminder from Central Pharmacy. Please collect your medicines at the earliest. Thank you! 🙏</textarea>
+          <p class="hint">Use <code>{name}</code> — it will be replaced with each contact's name automatically.</p>
+
+          <label class="field-label" style="margin-top:14px;">Live Preview</label>
+          <div class="preview-bubble" id="previewBubble">Preview will appear here...</div>
         </div>
       </div>
 
-      <div id="extra-cols-wrap" class="column-mapper"></div>
-
-      <div class="preview-wrap" id="previewWrap"></div>
-    </div>
-  </div>
-
-  <!-- STEP 2: Compose Message -->
-  <div class="card" id="card-message">
-    <div class="card-header">
-      <div class="step-badge">02</div>
-      <h2>Compose Message</h2>
-    </div>
-
-    <div class="message-area">
-      <div class="field-group">
-        <label>Message Template</label>
-        <textarea id="messageText" placeholder="Hi {name}, this is a message for you..."></textarea>
+      <div class="panel">
+        <div class="panel-header">
+          <span class="panel-title">Delay Between Messages</span>
+        </div>
+        <div style="padding:14px 16px;">
+          <div class="delay-row">
+            <span>Delay:</span>
+            <input type="range" id="delayRange" min="3" max="30" value="5" oninput="document.getElementById('delayVal').textContent=this.value+'s'" />
+            <span id="delayVal">5s</span>
+            <span style="font-size:0.75rem;">(avoids WhatsApp spam detection)</span>
+          </div>
+        </div>
       </div>
-      <div class="char-count" id="charCount">0 characters</div>
-    </div>
 
-    <div id="variableChips" class="variable-chips"></div>
-
-    <div class="msg-preview" id="msgPreview">
-      <div class="msg-preview-label">Preview (first contact)</div>
-      <div class="bubble" id="previewBubble">Your message will appear here...</div>
-    </div>
-  </div>
-
-  <!-- STEP 3: Settings + Send -->
-  <div class="card" id="card-settings">
-    <div class="card-header">
-      <div class="step-badge">03</div>
-      <h2>Send Settings</h2>
-    </div>
-
-    <div class="settings-row">
-      <div class="field-group">
-        <label>⏱ Delay Between Messages (seconds)</label>
-        <input type="number" id="delayInput" value="5" min="1" max="60">
-      </div>
-      <div class="field-group">
-        <label>🌍 Default Country Code</label>
-        <input type="text" id="countryCode" placeholder="91" value="91">
-      </div>
-    </div>
-
-    <div class="action-bar">
-      <button class="btn btn-primary" id="startBtn" disabled>
-        <span>▶</span> Start Sending
+      <button class="send-btn" id="sendBtn" onclick="startSending()">
+        <span>📤</span> Send to Selected Contacts
       </button>
-      <button class="btn btn-outline" id="pauseBtn" disabled>⏸ Pause</button>
-      <button class="btn btn-outline" id="resetBtn">↺ Reset</button>
-      <div class="stats" id="stats"></div>
+
+      <div class="panel progress-section" id="progressSection">
+        <div class="panel-header">
+          <span class="panel-title">Sending Progress</span>
+        </div>
+        <div style="padding:14px 16px;">
+          <div class="progress-text" id="progressText">Ready...</div>
+          <div class="progress-bar-wrap">
+            <div class="progress-bar-fill" id="progressFill"></div>
+          </div>
+          <div class="log-box" id="logBox"></div>
+        </div>
+      </div>
+
     </div>
   </div>
-
-  <!-- Queue -->
-  <div class="queue-section hidden" id="queueSection">
-    <div class="queue-header">
-      <h3>📤 Sending Queue</h3>
-      <span id="queueBadge" style="font-size:0.72rem;color:var(--muted)"></span>
-    </div>
-    <div class="info-grid" id="infoGrid">
-      <div class="info-tile"><div class="val" id="countTotal">0</div><div class="lbl">Total</div></div>
-      <div class="info-tile"><div class="val" id="countSent">0</div><div class="lbl">Sent</div></div>
-      <div class="info-tile"><div class="val" id="countPending">0</div><div class="lbl">Pending</div></div>
-    </div>
-    <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
-    <div class="queue-list" id="queueList"></div>
-  </div>
-
 </div>
 
-<!-- Toast -->
-<div class="toast" id="toast"></div>
-
 <script>
-let contacts = [];
-let headers = [];
+// ─── ALL CONTACTS FROM THE HANDWRITTEN LISTS ───
+let contacts = [
+  // Image 1 – Central Pharmacy (page 27)
+  { id:1,  name:"T. Sailaja",       phone:"9121532998", tags:[] },
+  { id:2,  name:"S. Haritha",       phone:"9573765562", tags:[] },
+  { id:3,  name:"M. Vani",          phone:"9492841183", tags:[] },
+  { id:4,  name:"B. Bharathi",      phone:"8639231402", tags:[] },
+  { id:5,  name:"I. Sateesh",       phone:"8374542793", tags:[] },
+  { id:6,  name:"A. Swathi",        phone:"9346886370", tags:[] },
+  { id:7,  name:"D. Sruthi",        phone:"8019527312", tags:[] },
+  { id:8,  name:"P. Prathima",      phone:"9553883682", tags:[] },
+  { id:9,  name:"K. Aanandh Raju",  phone:"6302233844", tags:["RAXA"] },
+  { id:10, name:"A. Sivasai",       phone:"9533334028", tags:[] },
+  { id:11, name:"Ch. Akhil Kumar",  phone:"8978848211", tags:["RAXA","BigBasket"] },
+  { id:12, name:"K. Prasanna Raju", phone:"9398231672", tags:["RAXA","KIA","BigBasket"] },
+
+  // Image 2 – Central Pharmacy (cont.)
+  { id:13, name:"B. Aparna",        phone:"9381996904", tags:[] },
+  { id:14, name:"B. Yamini",        phone:"6302230930", tags:[] },
+  { id:15, name:"P. Sudha",         phone:"7484234565", tags:[] },
+  { id:16, name:"K. Harika",        phone:"7195025159", tags:[] },
+  { id:17, name:"Ch. Pojitha",      phone:"6305020831", tags:[] },
+  { id:18, name:"P. Suryakumar",    phone:"9616292310", tags:[] },
+  { id:19, name:"V. Janaki",        phone:"6302981851", tags:[] },
+  { id:20, name:"S. Hemalatha",     phone:"9959438307", tags:[] },
+  { id:21, name:"I. Javaraju",      phone:"9848500568", tags:[] },
+  { id:22, name:"K. Hemalatha",     phone:"9573118643", tags:[] },
+  { id:23, name:"B. Raju",          phone:"9573118643", tags:[] },
+  { id:24, name:"D. Bamgaramma",    phone:"7416998702", tags:[] },
+  { id:25, name:"G. Rajeswari",     phone:"9676173833", tags:[] },
+  { id:26, name:"A. Tulasi",        phone:"7396946465", tags:[] },
+  { id:27, name:"V. Hemalatha",     phone:"8369957698", tags:[] },
+
+  // Image 3
+  { id:28, name:"R. Pattanna",      phone:"8121113362", tags:[] },
+  { id:29, name:"V. Sowrangi",      phone:"8998132012", tags:[] },
+  { id:30, name:"P. Vamsi",         phone:"8179493146", tags:[] },
+  { id:31, name:"R. Jayprakash",    phone:"7396553764", tags:[] },
+  { id:32, name:"K. Prasad",        phone:"9182422929", tags:[] },
+  { id:33, name:"K. Namshidhra",    phone:"7382465017", tags:[] },
+  { id:34, name:"U. Chandrarao",    phone:"6350514990", tags:[] },
+  { id:35, name:"K. Naseem Kumar",  phone:"7013815196", tags:[] },
+  { id:36, name:"A. Prasad",        phone:"9450550013", tags:[] },
+  { id:37, name:"G. Saikiran",      phone:"9398531688", tags:[] },
+  { id:38, name:"S. Suresh",        phone:"7383782784", tags:[] },
+  { id:39, name:"K. Premkumar",     phone:"7285512023", tags:[] },
+  { id:40, name:"A. Tajbabu",       phone:"6281531487", tags:[] },
+
+  // Image 4 – KIA list
+  { id:41, name:"A. Abdul Tajbabu", phone:"6281531484", tags:["KIA"] },
+  { id:42, name:"Fardeen Mablan",   phone:"7125174016", tags:["KIA"] },
+  { id:43, name:"P. Jayaram",       phone:"6309483678", tags:["KIA"] },
+  { id:44, name:"K. Appanna",       phone:"",           tags:["KIA"] },
+  { id:45, name:"I. Satish",        phone:"7121258763", tags:["KIA"] },
+  { id:46, name:"Ramakrishna",      phone:"8374542783", tags:["KIA"] },
+  { id:47, name:"D. Sai Kumar",     phone:"7033410025", tags:["KIA"] },
+  { id:48, name:"M. Sivakumar",     phone:"6305102577", tags:["KIA"] },
+  { id:49, name:"G. Chandrarao",    phone:"8195812513", tags:["KIA"] },
+];
+
+let selected = new Set();
+let nextId = 100;
+
+function getInitials(name) {
+  const parts = name.trim().split(/[\s.]+/).filter(Boolean);
+  if (parts.length >= 2) return (parts[parts.length-2][0] + parts[parts.length-1][0]).toUpperCase();
+  return name.slice(0,2).toUpperCase();
+}
+
+function renderContacts() {
+  const q = document.getElementById('searchInput').value.toLowerCase();
+  const filtered = contacts.filter(c =>
+    c.name.toLowerCase().includes(q) || c.phone.includes(q) ||
+    c.tags.some(t => t.toLowerCase().includes(q))
+  );
+  const list = document.getElementById('contactsList');
+  list.innerHTML = '';
+  filtered.forEach(c => {
+    const div = document.createElement('div');
+    div.className = 'contact-item' + (selected.has(c.id) ? ' selected' : '');
+    div.onclick = () => { toggle(c.id); };
+    const tagHtml = c.tags.map(t => {
+      const cls = t==='KIA'?'tag-kia':t==='RAXA'?'tag-raxa':'tag-bigbasket';
+      return `<span class="tag ${cls}">${t}</span>`;
+    }).join('');
+    div.innerHTML = `
+      <input type="checkbox" ${selected.has(c.id)?'checked':''} onclick="event.stopPropagation();toggle(${c.id})" />
+      <div class="avatar">${getInitials(c.name)}</div>
+      <div class="contact-info">
+        <div class="contact-name">${c.name}</div>
+        <div class="contact-phone">${c.phone || '–'} ${tagHtml}</div>
+      </div>`;
+    list.appendChild(div);
+  });
+  document.getElementById('totalBadge').textContent = contacts.length;
+  document.getElementById('selectedCount').textContent = selected.size + ' selected';
+}
+
+function toggle(id) {
+  if (selected.has(id)) selected.delete(id); else selected.add(id);
+  renderContacts();
+  updatePreview();
+}
+
+function selectAll() {
+  contacts.forEach(c => selected.add(c.id));
+  renderContacts(); updatePreview();
+}
+
+function deselectAll() {
+  selected.clear();
+  renderContacts(); updatePreview();
+}
+
+function addContact() {
+  const name = document.getElementById('newName').value.trim();
+  const phone = document.getElementById('newPhone').value.trim().replace(/\D/g,'');
+  const tagRaw = document.getElementById('newTag').value.trim();
+  if (!name) { alert('Please enter a name.'); return; }
+  if (!phone || phone.length < 10) { alert('Please enter a valid 10-digit phone number.'); return; }
+  const tags = tagRaw ? [tagRaw.toUpperCase()] : [];
+  contacts.push({ id: nextId++, name, phone, tags });
+  document.getElementById('newName').value = '';
+  document.getElementById('newPhone').value = '';
+  document.getElementById('newTag').value = '';
+  renderContacts();
+}
+
+// ─── PREVIEW ───
+document.getElementById('msgTemplate').addEventListener('input', updatePreview);
+function updatePreview() {
+  const tpl = document.getElementById('msgTemplate').value;
+  const sample = selected.size > 0
+    ? contacts.find(c => selected.has(c.id))?.name || 'Friend'
+    : 'T. Sailaja';
+  const firstName = sample.replace(/^[A-Z]\.\s*/, '').split(' ')[0];
+  document.getElementById('previewBubble').textContent =
+    tpl.replace(/\{name\}/g, firstName);
+}
+
+// ─── SEND ───
 let sending = false;
-let paused = false;
-let currentIndex = 0;
-let sendTimer = null;
-let countdown = 0;
 
-// --- FILE UPLOAD ---
-const fileInput = document.getElementById('fileInput');
-const dropzone = document.getElementById('dropzone');
-
-dropzone.addEventListener('dragover', e => { e.preventDefault(); dropzone.classList.add('dragover'); });
-dropzone.addEventListener('dragleave', () => dropzone.classList.remove('dragover'));
-dropzone.addEventListener('drop', e => {
-  e.preventDefault();
-  dropzone.classList.remove('dragover');
-  const f = e.dataTransfer.files[0];
-  if (f) processFile(f);
-});
-fileInput.addEventListener('change', e => { if (e.target.files[0]) processFile(e.target.files[0]); });
-
-function processFile(file) {
-  const reader = new FileReader();
-  reader.onload = e => {
-    let data;
-    try {
-      const wb = XLSX.read(e.target.result, { type: 'binary' });
-      const ws = wb.Sheets[wb.SheetNames[0]];
-      data = XLSX.utils.sheet_to_json(ws, { header: 1 });
-    } catch {
-      toast('Could not read file. Use .xlsx or .csv', 'error'); return;
-    }
-    if (data.length < 2) { toast('File appears empty or has no data rows', 'error'); return; }
-    headers = data[0].map(String);
-    contacts = data.slice(1).filter(r => r.some(c => c !== undefined && c !== ''))
-      .map(r => {
-        const obj = {};
-        headers.forEach((h, i) => obj[h] = r[i] !== undefined ? String(r[i]) : '');
-        return obj;
-      });
-    showColumnConfig();
-    toast(`✅ Loaded ${contacts.length} contacts`, 'success');
-    updateStepBar(1);
-  };
-  reader.readAsBinaryString(file);
-}
-
-function showColumnConfig() {
-  document.getElementById('column-config').classList.remove('hidden');
-  const phoneCol = document.getElementById('phoneCol');
-  const nameCol = document.getElementById('nameCol');
-  [phoneCol, nameCol].forEach(s => {
-    s.innerHTML = '';
-    if (s === nameCol) {
-      const opt = document.createElement('option');
-      opt.value = ''; opt.textContent = '— None —';
-      s.appendChild(opt);
-    }
-    headers.forEach(h => {
-      const opt = document.createElement('option');
-      opt.value = h; opt.textContent = h;
-      s.appendChild(opt);
-    });
-  });
-  // Auto-detect phone column
-  const phoneGuess = headers.find(h => /phone|mobile|number|whatsapp|tel|ph\b/i.test(h));
-  if (phoneGuess) phoneCol.value = phoneGuess;
-  const nameGuess = headers.find(h => /name|customer|contact|person|client/i.test(h));
-  if (nameGuess) nameCol.value = nameGuess;
-
-  renderPreview();
-  buildVariableChips();
-  updateStartBtn();
-  phoneCol.addEventListener('change', renderPreview);
-  nameCol.addEventListener('change', renderPreview);
-}
-
-function normalizePhone(raw, cc) {
-  let p = String(raw).replace(/\D/g, '');
-  if (!p) return null;
-  if (p.startsWith('0')) p = p.slice(1);
-  if (p.length <= 10) p = cc + p;
-  return p;
-}
-
-function renderPreview() {
-  const phCol = document.getElementById('phoneCol').value;
-  const nmCol = document.getElementById('nameCol').value;
-  const cc = document.getElementById('countryCode').value || '91';
-  const wrap = document.getElementById('previewWrap');
-
-  const sample = contacts.slice(0, 8);
-  let html = '<table><thead><tr>';
-  html += '<th>Row</th><th>Phone</th>';
-  if (nmCol) html += '<th>Name</th>';
-  headers.filter(h => h !== phCol && h !== nmCol).slice(0, 3).forEach(h => html += `<th>${h}</th>`);
-  html += '</tr></thead><tbody>';
-  sample.forEach((c, i) => {
-    const raw = c[phCol] || '';
-    const norm = normalizePhone(raw, cc);
-    const valid = norm && norm.length >= 10;
-    html += `<tr><td>${i+1}</td>`;
-    html += `<td class="${valid ? 'valid-phone' : 'invalid-phone'}">${norm || raw || '—'}</td>`;
-    if (nmCol) html += `<td>${c[nmCol] || '—'}</td>`;
-    headers.filter(h => h !== phCol && h !== nmCol).slice(0, 3).forEach(h => html += `<td>${c[h] || '—'}</td>`);
-    html += '</tr>';
-  });
-  html += '</tbody></table>';
-  wrap.innerHTML = html;
-  updateMessagePreview();
-}
-
-function buildVariableChips() {
-  const wrap = document.getElementById('variableChips');
-  const msgBox = document.getElementById('messageText');
-  wrap.innerHTML = '';
-  const label = document.createElement('span');
-  label.style.cssText = 'font-size:0.65rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em;align-self:center;';
-  label.textContent = 'Insert variable:';
-  wrap.appendChild(label);
-  headers.forEach(h => {
-    const chip = document.createElement('span');
-    chip.className = 'chip';
-    chip.textContent = `{${h}}`;
-    chip.title = `Insert ${h} variable`;
-    chip.onclick = () => {
-      const pos = msgBox.selectionStart;
-      const val = msgBox.value;
-      msgBox.value = val.slice(0, pos) + `{${h}}` + val.slice(msgBox.selectionEnd);
-      msgBox.focus();
-      msgBox.setSelectionRange(pos + h.length + 2, pos + h.length + 2);
-      updateMessagePreview();
-    };
-    wrap.appendChild(chip);
-  });
-}
-
-const msgBox = document.getElementById('messageText');
-msgBox.addEventListener('input', () => { updateMessagePreview(); updateCharCount(); updateStartBtn(); });
-document.getElementById('countryCode').addEventListener('input', renderPreview);
-
-function fillTemplate(template, contact) {
-  return template.replace(/\{(\w+)\}/g, (_, key) => contact[key] || `{${key}}`);
-}
-
-function updateMessagePreview() {
-  const tmpl = msgBox.value;
-  const bubble = document.getElementById('previewBubble');
-  if (!tmpl) { bubble.textContent = 'Your message will appear here...'; return; }
-  const sample = contacts[0] || {};
-  bubble.textContent = fillTemplate(tmpl, sample);
-  updateStartBtn();
-}
-
-function updateCharCount() {
-  const n = msgBox.value.length;
-  document.getElementById('charCount').textContent = `${n} character${n !== 1 ? 's' : ''}`;
-}
-
-function updateStartBtn() {
-  const ok = contacts.length > 0 && msgBox.value.trim().length > 0;
-  document.getElementById('startBtn').disabled = !ok;
-  if (ok) updateStepBar(2);
-}
-
-function updateStepBar(n) {
-  for (let i = 1; i <= 3; i++) {
-    const s = document.getElementById(`step${i}`);
-    if (i < n) s.className = 'step done';
-    else if (i === n) s.className = 'step active';
-    else s.className = 'step';
-  }
-}
-
-// --- SENDING ---
-document.getElementById('startBtn').addEventListener('click', startSending);
-document.getElementById('pauseBtn').addEventListener('click', togglePause);
-document.getElementById('resetBtn').addEventListener('click', resetAll);
-
-function startSending() {
+async function startSending() {
   if (sending) return;
-  const phCol = document.getElementById('phoneCol').value;
-  const nmCol = document.getElementById('nameCol').value;
-  const cc = document.getElementById('countryCode').value || '91';
-  const tmpl = msgBox.value.trim();
-  const delay = parseInt(document.getElementById('delayInput').value) || 5;
-
-  // Build queue
-  const validContacts = contacts.map(c => {
-    const raw = c[phCol] || '';
-    const phone = normalizePhone(raw, cc);
-    const name = nmCol ? (c[nmCol] || '') : '';
-    return { phone, name, contact: c, valid: !!(phone && phone.length >= 10) };
-  });
-
-  const invalid = validContacts.filter(c => !c.valid).length;
-  if (invalid > 0) toast(`⚠️ ${invalid} contact(s) skipped (invalid phone)`, 'warn');
-
-  const queue = validContacts.filter(c => c.valid);
-  if (!queue.length) { toast('No valid phone numbers found!', 'error'); return; }
+  const recipients = contacts.filter(c => selected.has(c.id) && c.phone);
+  if (recipients.length === 0) { alert('Please select contacts with phone numbers.'); return; }
+  const tpl = document.getElementById('msgTemplate').value.trim();
+  if (!tpl) { alert('Please enter a message template.'); return; }
 
   sending = true;
-  paused = false;
-  currentIndex = 0;
-  updateStepBar(3);
-  document.getElementById('startBtn').disabled = true;
-  document.getElementById('pauseBtn').disabled = false;
-  document.getElementById('queueSection').classList.remove('hidden');
+  document.getElementById('sendBtn').disabled = true;
+  const prog = document.getElementById('progressSection');
+  prog.classList.add('active');
+  const fill = document.getElementById('progressFill');
+  const txt = document.getElementById('progressText');
+  const log = document.getElementById('logBox');
+  log.innerHTML = '';
 
-  // Render queue
-  const qList = document.getElementById('queueList');
-  qList.innerHTML = '';
-  document.getElementById('countTotal').textContent = queue.length;
-  document.getElementById('countSent').textContent = '0';
-  document.getElementById('countPending').textContent = queue.length;
-  document.getElementById('queueBadge').textContent = `${queue.length} recipients`;
-  document.getElementById('progressFill').style.width = '0%';
+  const delay = parseInt(document.getElementById('delayRange').value) * 1000;
 
-  queue.forEach((c, i) => {
-    const div = document.createElement('div');
-    div.className = 'queue-item pending';
-    div.id = `qi-${i}`;
-    div.innerHTML = `
-      <span class="q-status">⏳</span>
-      <span class="q-phone">${c.phone}</span>
-      <span class="q-name">${c.name || ''}</span>
-      <span class="q-action" id="qa-${i}"></span>
-      <span class="q-timer" id="qt-${i}"></span>
-    `;
-    qList.appendChild(div);
-  });
+  for (let i = 0; i < recipients.length; i++) {
+    const c = recipients[i];
+    const firstName = c.name.replace(/^[A-Z]\.\s*/, '').split(' ')[0];
+    const msg = tpl.replace(/\{name\}/g, firstName);
+    const phone = '91' + c.phone.replace(/\D/g, '').slice(-10);
+    const url = `https://wa.me/${phone}?text=${encodeURIComponent(msg)}`;
 
-  function sendNext() {
-    if (paused || currentIndex >= queue.length) return;
-    const c = queue[currentIndex];
-    const idx = currentIndex;
-    const msg = fillTemplate(tmpl, c.contact);
-    const url = `https://wa.me/${c.phone}?text=${encodeURIComponent(msg)}`;
+    const pct = Math.round(((i) / recipients.length) * 100);
+    fill.style.width = pct + '%';
+    txt.textContent = `Sending ${i+1} of ${recipients.length}: ${c.name}`;
 
-    // Update UI
-    const item = document.getElementById(`qi-${idx}`);
-    item.className = 'queue-item sending';
-    item.querySelector('.q-status').textContent = '📨';
-    const actionEl = document.getElementById(`qa-${idx}`);
-    actionEl.innerHTML = `<a href="${url}" target="_blank" rel="noopener">Open ↗</a>`;
-    window.open(url, '_blank', 'noopener');
+    const entry = document.createElement('div');
+    entry.className = 'log-entry';
+    entry.textContent = `→ Opening WhatsApp for ${c.name} (${c.phone})...`;
+    log.appendChild(entry);
+    log.scrollTop = log.scrollHeight;
 
-    // After open: mark sent
-    setTimeout(() => {
-      item.className = 'queue-item sent';
-      item.querySelector('.q-status').textContent = '✅';
-      const sent = idx + 1;
-      document.getElementById('countSent').textContent = sent;
-      document.getElementById('countPending').textContent = queue.length - sent;
-      document.getElementById('progressFill').style.width = `${(sent / queue.length) * 100}%`;
-      currentIndex++;
+    // Open WhatsApp
+    window.open(url, '_blank');
 
-      if (currentIndex >= queue.length) {
-        sending = false;
-        document.getElementById('pauseBtn').disabled = true;
-        toast(`🎉 All ${queue.length} messages sent!`, 'success');
-        return;
-      }
-
-      // Countdown timer
-      let remaining = delay;
-      const timerEl = document.getElementById(`qt-${currentIndex}`);
-      document.getElementById(`qi-${currentIndex}`).className = 'queue-item pending';
-      const tick = setInterval(() => {
-        if (paused) { clearInterval(tick); return; }
-        if (timerEl) timerEl.textContent = `in ${remaining}s`;
-        remaining--;
-        if (remaining < 0) {
-          clearInterval(tick);
-          if (timerEl) timerEl.textContent = '';
-          if (!paused) sendNext();
-        }
-      }, 1000);
-      sendTimer = tick;
-    }, 800);
-  }
-
-  sendNext();
-}
-
-function togglePause() {
-  paused = !paused;
-  const btn = document.getElementById('pauseBtn');
-  if (paused) {
-    btn.textContent = '▶ Resume';
-    toast('⏸ Paused', 'warn');
-  } else {
-    btn.textContent = '⏸ Pause';
-    toast('▶ Resumed', 'success');
-    // Resume from current
-    const delay = parseInt(document.getElementById('delayInput').value) || 5;
-    setTimeout(() => {
-      if (!paused) startFromIndex(currentIndex, delay);
-    }, 500);
-  }
-}
-
-function startFromIndex(idx, delay) {
-  // Not a full restart, just resume the timer
-  const queue = buildQueue();
-  if (!queue || idx >= queue.length) return;
-  const timerEl = document.getElementById(`qt-${idx}`);
-  let remaining = delay;
-  const tick = setInterval(() => {
-    if (paused) { clearInterval(tick); return; }
-    if (timerEl) timerEl.textContent = `in ${remaining}s`;
-    remaining--;
-    if (remaining < 0) {
-      clearInterval(tick);
-      if (timerEl) timerEl.textContent = '';
-      resumeSend(idx, queue, delay);
+    if (i < recipients.length - 1) {
+      await new Promise(r => setTimeout(r, delay));
     }
-  }, 1000);
-}
-
-function buildQueue() {
-  const phCol = document.getElementById('phoneCol').value;
-  const nmCol = document.getElementById('nameCol').value;
-  const cc = document.getElementById('countryCode').value || '91';
-  return contacts.map(c => {
-    const raw = c[phCol] || '';
-    const phone = normalizePhone(raw, cc);
-    const name = nmCol ? (c[nmCol] || '') : '';
-    return { phone, name, contact: c, valid: !!(phone && phone.length >= 10) };
-  }).filter(c => c.valid);
-}
-
-function resumeSend(idx, queue, delay) {
-  if (paused || idx >= queue.length) return;
-  const c = queue[idx];
-  const tmpl = msgBox.value.trim();
-  const msg = fillTemplate(tmpl, c.contact);
-  const url = `https://wa.me/${c.phone}?text=${encodeURIComponent(msg)}`;
-  const item = document.getElementById(`qi-${idx}`);
-  if (item) {
-    item.className = 'queue-item sending';
-    item.querySelector('.q-status').textContent = '📨';
-    const actionEl = document.getElementById(`qa-${idx}`);
-    if (actionEl) actionEl.innerHTML = `<a href="${url}" target="_blank" rel="noopener">Open ↗</a>`;
   }
-  window.open(url, '_blank', 'noopener');
-  setTimeout(() => {
-    if (item) { item.className = 'queue-item sent'; item.querySelector('.q-status').textContent = '✅'; }
-    const sent = idx + 1;
-    document.getElementById('countSent').textContent = sent;
-    document.getElementById('countPending').textContent = queue.length - sent;
-    document.getElementById('progressFill').style.width = `${(sent / queue.length) * 100}%`;
-    currentIndex = idx + 1;
-    if (currentIndex < queue.length && !paused) {
-      startFromIndex(currentIndex, delay);
-    } else if (currentIndex >= queue.length) {
-      sending = false;
-      document.getElementById('pauseBtn').disabled = true;
-      toast(`🎉 All ${queue.length} messages sent!`, 'success');
-    }
-  }, 800);
-}
 
-function resetAll() {
-  sending = false; paused = false; currentIndex = 0;
-  if (sendTimer) clearInterval(sendTimer);
-  contacts = []; headers = [];
-  fileInput.value = '';
-  document.getElementById('column-config').classList.add('hidden');
-  document.getElementById('queueSection').classList.add('hidden');
-  document.getElementById('messageText').value = '';
-  document.getElementById('previewBubble').textContent = 'Your message will appear here...';
-  document.getElementById('charCount').textContent = '0 characters';
-  document.getElementById('variableChips').innerHTML = '';
-  document.getElementById('startBtn').disabled = true;
-  document.getElementById('pauseBtn').disabled = true;
-  document.getElementById('pauseBtn').textContent = '⏸ Pause';
-  document.getElementById('stats').innerHTML = '';
-  for (let i = 1; i <= 3; i++) {
-    document.getElementById(`step${i}`).className = i === 1 ? 'step active' : 'step';
-  }
-  toast('↺ Reset complete', 'success');
-}
+  fill.style.width = '100%';
+  txt.textContent = `✅ Done! Opened ${recipients.length} WhatsApp chats.`;
+  const done = document.createElement('div');
+  done.className = 'log-entry';
+  done.textContent = `✅ All ${recipients.length} messages queued successfully!`;
+  log.appendChild(done);
 
-// --- TOAST ---
-function toast(msg, type = 'success') {
-  const t = document.getElementById('toast');
-  const icons = { success: '✅', error: '❌', warn: '⚠️' };
-  t.textContent = `${icons[type] || ''} ${msg}`;
-  t.className = `toast ${type} show`;
-  setTimeout(() => t.className = 'toast', 3000);
+  sending = false;
+  document.getElementById('sendBtn').disabled = false;
 }
 
 // Init
-document.getElementById('delayInput').addEventListener('input', () => {});
-updateCharCount();
+renderContacts();
+updatePreview();
 </script>
-<p style="text-align: center;">DESIGNED BY NIKHIL KUMAR DHAVALESWARAPU </p>
 </body>
 </html>
