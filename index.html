@@ -1,730 +1,723 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>DropBeam</title>
-<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
-<script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
-<style>
-:root {
-  --bg: #0d0d14;
-  --card: #161622;
-  --border: #252538;
-  --accent: #5e6ad2;
-  --accent-glow: rgba(94,106,210,.25);
-  --green: #3dd68c;
-  --red: #f87171;
-  --yellow: #fbbf24;
-  --text: #e2e2f0;
-  --sub: #6b6b8f;
-  --r: 12px;
-}
-*{box-sizing:border-box;margin:0;padding:0;}
-html,body{height:100%;}
-body{
-  background:var(--bg);
-  color:var(--text);
-  font-family:'Space Grotesk',sans-serif;
-  min-height:100vh;
-  display:flex;flex-direction:column;align-items:center;
-  padding:20px 14px 60px;
-}
-/* subtle dot grid */
-body::after{
-  content:'';position:fixed;inset:0;
-  background-image:radial-gradient(rgba(94,106,210,.12) 1px,transparent 1px);
-  background-size:28px 28px;
-  pointer-events:none;z-index:0;
-}
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Multiplayer Ludo Game</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
 
-.shell{position:relative;z-index:1;width:100%;max-width:520px;}
+        body {
+            font-family: Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
 
-/* ─── HEADER ─── */
-.hdr{text-align:center;padding:10px 0 28px;}
-.logo{font-size:30px;font-weight:700;letter-spacing:-1px;line-height:1;}
-.logo em{font-style:normal;color:var(--accent);}
-.sub{font-family:'Fira Code',monospace;font-size:10px;color:var(--sub);letter-spacing:2px;text-transform:uppercase;margin-top:5px;}
+        .container {
+            display: flex;
+            gap: 30px;
+            background: white;
+            padding: 30px;
+            border-radius: 20px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+            max-width: 1200px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
 
-/* ─── MODE TOGGLE ─── */
-.mode-row{display:flex;gap:8px;margin-bottom:20px;background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:5px;}
-.mode-btn{flex:1;padding:10px;border:none;background:transparent;color:var(--sub);font-family:'Space Grotesk',sans-serif;font-size:13px;font-weight:700;border-radius:9px;cursor:pointer;transition:all .2s;text-transform:uppercase;letter-spacing:.5px;}
-.mode-btn.active{background:var(--accent);color:#fff;box-shadow:0 0 18px var(--accent-glow);}
+        .game-area {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            align-items: center;
+        }
 
-/* ─── CARD ─── */
-.card{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:18px;margin-bottom:14px;}
-.card-title{font-family:'Fira Code',monospace;font-size:10px;text-transform:uppercase;letter-spacing:2px;color:var(--sub);margin-bottom:12px;}
+        .board-container {
+            position: relative;
+            width: 600px;
+            height: 600px;
+            border: 3px solid #333;
+            background: #f5f5f5;
+            border-radius: 10px;
+        }
 
-/* ─── ROOM INPUT ─── */
-.room-row{display:flex;gap:8px;align-items:center;}
-.room-in{
-  flex:1;background:var(--bg);border:1px solid var(--border);border-radius:9px;
-  padding:11px 14px;color:var(--accent);font-family:'Fira Code',monospace;
-  font-size:16px;font-weight:500;letter-spacing:3px;text-transform:uppercase;
-  outline:none;transition:border-color .2s;
-}
-.room-in:focus{border-color:var(--accent);}
-.room-in::placeholder{color:var(--border);letter-spacing:1px;}
-.btn-sm{
-  background:var(--border);border:none;color:var(--text);
-  font-family:'Space Grotesk',sans-serif;font-size:11px;font-weight:700;
-  padding:11px 13px;border-radius:9px;cursor:pointer;white-space:nowrap;
-  text-transform:uppercase;letter-spacing:.5px;transition:background .2s;
-}
-.btn-sm:hover{background:var(--accent);color:#fff;}
+        .board {
+            width: 100%;
+            height: 100%;
+            display: grid;
+            grid-template-columns: repeat(15, 1fr);
+            grid-template-rows: repeat(15, 1fr);
+            gap: 1px;
+            background: white;
+            border-radius: 10px;
+            overflow: hidden;
+        }
 
-/* pill indicator */
-.pill{
-  display:inline-flex;align-items:center;gap:6px;
-  padding:4px 10px;border-radius:99px;font-family:'Fira Code',monospace;
-  font-size:10px;font-weight:500;letter-spacing:1px;text-transform:uppercase;
-  border:1px solid var(--border);color:var(--sub);margin-top:10px;
-}
-.pill .dot{width:7px;height:7px;border-radius:50%;background:var(--sub);}
-.pill.on{border-color:var(--green);color:var(--green);}
-.pill.on .dot{background:var(--green);box-shadow:0 0 6px var(--green);animation:blink 1.4s infinite;}
-.pill.err{border-color:var(--red);color:var(--red);}
-.pill.err .dot{background:var(--red);}
-.pill.wait{border-color:var(--yellow);color:var(--yellow);}
-.pill.wait .dot{background:var(--yellow);animation:blink 1s infinite;}
-@keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
+        .cell {
+            background: #fff;
+            border: 1px solid #ddd;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 8px;
+            color: #999;
+        }
 
-/* ─── DROP ZONE ─── */
-.dz{
-  border:2px dashed var(--border);border-radius:var(--r);
-  padding:32px 16px;text-align:center;cursor:pointer;
-  transition:all .2s;position:relative;background:var(--bg);
-}
-.dz.over{border-color:var(--accent);background:var(--accent-glow);}
-.dz input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%;}
-.dz-icon{font-size:32px;display:block;margin-bottom:10px;}
-.dz-text{font-size:13px;color:var(--sub);}
-.dz-text b{color:var(--text);display:block;margin-bottom:3px;font-size:15px;}
+        .cell.home {
+            background: #ffe6e6;
+            border: 2px solid #ff6b6b;
+        }
 
-/* file bar */
-.fbar{display:none;align-items:center;gap:10px;background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:10px 12px;margin-bottom:12px;}
-.fbar.show{display:flex;}
-.fbar-icon{font-size:24px;}
-.fbar-info{flex:1;min-width:0;}
-.fbar-name{font-size:12px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-.fbar-size{font-family:'Fira Code',monospace;font-size:10px;color:var(--sub);margin-top:2px;}
-.fbar-rm{background:none;border:none;color:var(--red);font-size:16px;cursor:pointer;padding:2px 6px;}
+        .cell.home.blue {
+            background: #e6f0ff;
+            border-color: #4299e1;
+        }
 
-/* image thumb */
-.img-pre{display:none;max-width:100%;max-height:150px;border-radius:9px;margin-bottom:12px;border:1px solid var(--border);}
-.img-pre.show{display:block;margin:0 auto 12px;}
+        .cell.home.yellow {
+            background: #fffbe6;
+            border-color: #f9ca24;
+        }
 
-/* text area */
-.txa{
-  width:100%;min-height:90px;resize:vertical;
-  background:var(--bg);border:1px solid var(--border);border-radius:10px;
-  color:var(--text);font-family:'Fira Code',monospace;font-size:13px;
-  padding:12px;outline:none;transition:border-color .2s;
-}
-.txa:focus{border-color:var(--accent);}
-.txa::placeholder{color:var(--border);}
+        .cell.home.green {
+            background: #e6ffe6;
+            border-color: #26a65b;
+        }
 
-/* progress */
-.prog-wrap{display:none;margin-top:10px;}
-.prog-wrap.show{display:block;}
-.prog-bg{background:var(--border);border-radius:99px;height:5px;overflow:hidden;}
-.prog-fill{height:100%;background:var(--accent);border-radius:99px;width:0%;transition:width .2s;}
-.prog-lbl{font-family:'Fira Code',monospace;font-size:10px;color:var(--sub);text-align:center;margin-top:5px;}
+        .cell.finish {
+            background: #fff0e6;
+            border: 2px solid #ff9500;
+        }
 
-/* main button */
-.btn-main{
-  width:100%;padding:15px;border:none;border-radius:var(--r);
-  font-family:'Space Grotesk',sans-serif;font-size:15px;font-weight:700;
-  letter-spacing:.5px;text-transform:uppercase;cursor:pointer;
-  transition:all .2s;display:flex;align-items:center;justify-content:center;gap:8px;
-}
-.btn-main.send-btn{background:var(--accent);color:#fff;box-shadow:0 0 20px var(--accent-glow);}
-.btn-main.send-btn:active{transform:scale(.97);}
-.btn-main.send-btn:disabled{opacity:.5;cursor:not-allowed;box-shadow:none;}
-.btn-main.send-btn.ok{background:var(--green);box-shadow:0 0 20px rgba(61,214,140,.25);}
-.btn-main.recv-btn{background:transparent;border:2px solid var(--accent);color:var(--accent);}
-.btn-main.recv-btn.listening{background:var(--red);border-color:var(--red);color:#fff;}
-.btn-main.recv-btn:active{transform:scale(.97);}
+        .cell.path {
+            background: #fafafa;
+        }
 
-.status-msg{text-align:center;font-family:'Fira Code',monospace;font-size:11px;margin-top:10px;min-height:16px;}
-.status-msg.ok{color:var(--green);}
-.status-msg.err{color:var(--red);}
-.status-msg.info{color:var(--accent);}
+        .pawn {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            cursor: pointer;
+            border: 2px solid white;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-weight: bold;
+            font-size: 12px;
+            transition: transform 0.2s;
+            position: absolute;
+            z-index: 10;
+        }
 
-/* ─── INBOX ─── */
-.inbox-hdr{display:flex;align-items:center;gap:10px;margin-bottom:12px;}
-.inbox-title{font-family:'Fira Code',monospace;font-size:11px;text-transform:uppercase;letter-spacing:2px;color:var(--sub);}
-.badge{background:var(--accent);color:#fff;font-size:10px;font-weight:700;padding:2px 7px;border-radius:99px;}
-.btn-clr{margin-left:auto;background:none;border:1px solid var(--border);color:var(--sub);font-family:'Fira Code',monospace;font-size:10px;padding:4px 10px;border-radius:7px;cursor:pointer;text-transform:uppercase;letter-spacing:1px;transition:all .2s;}
-.btn-clr:hover{border-color:var(--red);color:var(--red);}
+        .pawn:hover {
+            transform: scale(1.1);
+        }
 
-.packets{display:flex;flex-direction:column;gap:10px;}
-.pkt{
-  background:var(--card);border:1px solid var(--border);border-radius:var(--r);
-  padding:14px;animation:pop .25s ease;
-}
-.pkt.fresh{border-color:var(--accent);}
-@keyframes pop{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:translateY(0)}}
-.pkt-top{display:flex;align-items:center;gap:8px;margin-bottom:10px;}
-.pkt-ico{font-size:20px;}
-.pkt-time{font-family:'Fira Code',monospace;font-size:10px;color:var(--sub);flex:1;}
-.pkt-new{background:var(--accent);color:#fff;font-family:'Fira Code',monospace;font-size:9px;font-weight:700;padding:2px 6px;border-radius:4px;letter-spacing:1px;}
-.pkt-msg{
-  font-family:'Fira Code',monospace;font-size:12px;line-height:1.6;
-  color:var(--text);background:rgba(94,106,210,.07);
-  border-left:3px solid var(--accent);padding:9px 11px;
-  border-radius:0 8px 8px 0;white-space:pre-wrap;word-break:break-word;
-  user-select:text;margin-bottom:8px;
-}
-.btn-cp{
-  background:var(--border);border:none;color:var(--sub);
-  font-family:'Fira Code',monospace;font-size:10px;
-  padding:5px 10px;border-radius:6px;cursor:pointer;
-  transition:all .2s;letter-spacing:.5px;
-}
-.btn-cp:hover{background:var(--accent);color:#fff;}
-.pkt-file{
-  display:flex;align-items:center;gap:10px;
-  background:var(--bg);border:1px solid var(--border);
-  border-radius:9px;padding:10px;
-}
-.pkt-file-ico{font-size:24px;}
-.pkt-finfo{flex:1;min-width:0;}
-.pkt-fname{font-size:12px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-.pkt-ftype{font-family:'Fira Code',monospace;font-size:10px;color:var(--sub);margin-top:2px;}
-.btn-dl{
-  background:var(--accent);color:#fff;border:none;border-radius:7px;
-  font-family:'Space Grotesk',sans-serif;font-size:11px;font-weight:700;
-  padding:7px 12px;cursor:pointer;text-decoration:none;
-  text-transform:uppercase;letter-spacing:.5px;white-space:nowrap;
-  display:inline-flex;align-items:center;gap:4px;
-}
-.btn-dl:hover{opacity:.85;}
-.pkt-img{max-width:100%;max-height:260px;border-radius:8px;margin-top:10px;border:1px solid var(--border);display:block;}
+        .pawn.red {
+            background: #ff4444;
+            color: white;
+        }
 
-.empty-state{text-align:center;padding:40px 20px;color:var(--sub);font-family:'Fira Code',monospace;font-size:12px;}
-.empty-state span{font-size:40px;display:block;margin-bottom:12px;opacity:.4;}
+        .pawn.blue {
+            background: #4299e1;
+            color: white;
+        }
 
-/* ─── HOW TO USE ─── */
-.howto{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:16px;margin-bottom:14px;}
-.howto-title{font-family:'Fira Code',monospace;font-size:10px;text-transform:uppercase;letter-spacing:2px;color:var(--sub);margin-bottom:10px;}
-.step{display:flex;gap:10px;margin-bottom:8px;font-size:13px;color:var(--sub);}
-.step:last-child{margin-bottom:0;}
-.step-n{
-  width:22px;height:22px;border-radius:50%;background:var(--accent);color:#fff;
-  font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;
-  flex-shrink:0;margin-top:1px;
-}
-.step b{color:var(--text);}
-</style>
+        .pawn.yellow {
+            background: #ffd700;
+            color: #333;
+        }
+
+        .pawn.green {
+            background: #52c41a;
+            color: white;
+        }
+
+        .control-panel {
+            background: #f9f9f9;
+            padding: 20px;
+            border-radius: 10px;
+            border: 2px solid #ddd;
+            min-width: 250px;
+        }
+
+        .dice-container {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .dice {
+            width: 80px;
+            height: 80px;
+            background: white;
+            border: 3px solid #333;
+            border-radius: 10px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 40px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin: 10px auto;
+            user-select: none;
+        }
+
+        .dice:hover:not(.disabled) {
+            background: #ffffcc;
+            transform: scale(1.05);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .dice.disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .dice-btn {
+            padding: 12px 24px;
+            font-size: 16px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: bold;
+            width: 100%;
+        }
+
+        .dice-btn:hover:not(.disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .dice-btn.disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .info-panel {
+            background: white;
+            border: 2px solid #ddd;
+            border-radius: 10px;
+            padding: 15px;
+            margin-top: 15px;
+        }
+
+        .current-player {
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 10px;
+            padding: 10px;
+            border-radius: 5px;
+            text-align: center;
+        }
+
+        .current-player.red {
+            background: #ffcccc;
+            color: #cc0000;
+        }
+
+        .current-player.blue {
+            background: #cce5ff;
+            color: #0052cc;
+        }
+
+        .current-player.yellow {
+            background: #ffffcc;
+            color: #cc8800;
+        }
+
+        .current-player.green {
+            background: #ccffcc;
+            color: #008800;
+        }
+
+        .dice-result {
+            font-size: 16px;
+            margin-top: 10px;
+            padding: 10px;
+            background: #f0f0f0;
+            border-radius: 5px;
+            text-align: center;
+        }
+
+        .player-status {
+            margin-top: 15px;
+            font-size: 13px;
+        }
+
+        .player-status-item {
+            padding: 8px;
+            margin: 5px 0;
+            border-radius: 5px;
+            background: #f5f5f5;
+            border-left: 4px solid #333;
+        }
+
+        .player-status-item.red {
+            border-left-color: #ff4444;
+        }
+
+        .player-status-item.blue {
+            border-left-color: #4299e1;
+        }
+
+        .player-status-item.yellow {
+            border-left-color: #ffd700;
+        }
+
+        .player-status-item.green {
+            border-left-color: #52c41a;
+        }
+
+        .reset-btn {
+            width: 100%;
+            padding: 12px;
+            margin-top: 15px;
+            background: #ff6b6b;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s;
+        }
+
+        .reset-btn:hover {
+            background: #ee5a52;
+            transform: translateY(-2px);
+        }
+
+        .message {
+            padding: 10px;
+            margin-top: 10px;
+            border-radius: 5px;
+            text-align: center;
+            font-weight: bold;
+            min-height: 20px;
+        }
+
+        .message.info {
+            background: #e3f2fd;
+            color: #1976d2;
+        }
+
+        .message.success {
+            background: #e8f5e9;
+            color: #388e3c;
+        }
+
+        .message.error {
+            background: #ffebee;
+            color: #c62828;
+        }
+
+        @media (max-width: 900px) {
+            .container {
+                flex-direction: column;
+                align-items: center;
+            }
+
+            .board-container {
+                width: 400px;
+                height: 400px;
+            }
+
+            .control-panel {
+                min-width: 300px;
+            }
+        }
+    </style>
 </head>
 <body>
-<div class="shell">
-
-  <div class="hdr">
-    <div class="logo">Drop<em>Beam</em></div>
-    <div class="sub">phone ↔ pc · no signup needed</div>
-  </div>
-
-  <!-- HOW TO USE -->
-  <div class="howto" id="howto">
-    <div class="howto-title">How to use</div>
-    <div class="step"><div class="step-n">1</div><div>Open this page on <b>your PC</b> → choose <b>Receive</b> → press <b>Start Listening</b></div></div>
-    <div class="step"><div class="step-n">2</div><div>Open this page on <b>your phone/netbook</b> → choose <b>Send</b> → enter the <b>Room ID</b> shown on your PC</div></div>
-    <div class="step"><div class="step-n">3</div><div>Attach any file or type a message → hit <b>Send</b> — it appears on your PC instantly</div></div>
-  </div>
-
-  <!-- MODE -->
-  <div class="mode-row">
-    <button class="mode-btn active" id="btn-mode-send" onclick="setMode('send')">📤 Send</button>
-    <button class="mode-btn" id="btn-mode-recv" onclick="setMode('recv')">📥 Receive</button>
-  </div>
-
-  <!-- ═══ SEND PANEL ═══ -->
-  <div id="panel-send">
-    <div class="card">
-      <div class="card-title">Room ID (enter the code shown on your PC)</div>
-      <div class="room-row">
-        <input class="room-in" id="s-room" maxlength="12" placeholder="ABC123" spellcheck="false">
-      </div>
-      <div id="s-pill" class="pill"><span class="dot"></span><span id="s-pill-txt">Not connected</span></div>
-    </div>
-
-    <div class="card">
-      <div class="card-title">Attach a file (optional)</div>
-      <div class="dz" id="dz">
-        <input type="file" id="file-in" onchange="onFile(this.files[0])">
-        <span class="dz-icon">📎</span>
-        <div class="dz-text"><b>Tap to choose a file</b>or drag & drop</div>
-      </div>
-      <img class="img-pre" id="img-pre" alt="">
-      <div class="fbar" id="fbar">
-        <span class="fbar-icon" id="fbar-ico">📄</span>
-        <div class="fbar-info">
-          <div class="fbar-name" id="fbar-name"></div>
-          <div class="fbar-size" id="fbar-size"></div>
+    <div class="container">
+        <div class="game-area">
+            <h1>🎲 Multiplayer Ludo Game 🎲</h1>
+            <div class="board-container">
+                <div class="board" id="board"></div>
+                <div id="pawns-container"></div>
+            </div>
         </div>
-        <button class="fbar-rm" onclick="clearFile()">✕</button>
-      </div>
+
+        <div class="control-panel">
+            <div class="dice-container">
+                <h3>Roll Dice</h3>
+                <div class="dice" id="dice">🎲</div>
+                <button class="dice-btn" id="rollBtn" onclick="rollDice()">Roll Dice</button>
+            </div>
+
+            <div class="info-panel">
+                <div class="current-player" id="currentPlayer">
+                    <span id="playerColor"></span>'s Turn
+                </div>
+                <div class="dice-result" id="diceResult"></div>
+                <div class="message" id="message"></div>
+            </div>
+
+            <div class="player-status" id="playerStatus"></div>
+
+            <button class="reset-btn" onclick="resetGame()">New Game</button>
+        </div>
     </div>
 
-    <div class="card">
-      <div class="card-title">Message (optional)</div>
-      <textarea class="txa" id="s-msg" placeholder="Type anything here…"></textarea>
-    </div>
+    <script>
+        // Game Configuration
+        const PLAYERS = ['red', 'blue', 'yellow', 'green'];
+        const BOARD_SIZE = 15;
+        const CELLS_PER_PLAYER = 52;
+        const FINISH_LINE_CELLS = 6;
 
-    <div class="prog-wrap" id="prog-wrap">
-      <div class="prog-bg"><div class="prog-fill" id="prog-fill"></div></div>
-      <div class="prog-lbl" id="prog-lbl">Sending…</div>
-    </div>
+        // Game State
+        let gameState = {
+            currentPlayer: 0,
+            diceValue: 0,
+            playerPawns: {
+                red: [0, -1, -1, -1],
+                blue: [0, -1, -1, -1],
+                yellow: [0, -1, -1, -1],
+                green: [0, -1, -1, -1]
+            },
+            playerHomes: {
+                red: [],
+                blue: [],
+                yellow: [],
+                green: []
+            },
+            winner: null,
+            canRoll: true,
+            lastDiceValue: 0
+        };
 
-    <button class="btn-main send-btn" id="btn-send" onclick="doSend()">⚡ Send to PC</button>
-    <div class="status-msg" id="s-status"></div>
-  </div>
+        // Pawn Positions (starting from specific cells for each player)
+        const PLAYER_START_CELLS = {
+            red: 0,
+            blue: 13,
+            yellow: 26,
+            green: 39
+        };
 
-  <!-- ═══ RECEIVE PANEL ═══ -->
-  <div id="panel-recv" style="display:none;">
-    <div class="card">
-      <div class="card-title">Your Room ID — share this with the sender</div>
-      <div class="room-row">
-        <input class="room-in" id="r-room" readonly placeholder="Generating…" style="cursor:default;">
-        <button class="btn-sm" onclick="copyRoomId()">Copy</button>
-        <button class="btn-sm" onclick="newRoom()">New</button>
-      </div>
-      <div id="r-pill" class="pill wait"><span class="dot"></span><span id="r-pill-txt">Starting…</span></div>
-    </div>
+        const HOME_POSITIONS = {
+            red: { row: 1, col: 1, size: 4 },
+            blue: { row: 1, col: 13, size: 4 },
+            yellow: { row: 13, col: 13, size: 4 },
+            green: { row: 13, col: 1, size: 4 }
+        };
 
-    <button class="btn-main recv-btn" id="btn-listen" onclick="toggleListen()">▶ Start Listening</button>
-    <div class="status-msg" id="r-status"></div>
-
-    <div style="height:18px;"></div>
-    <div class="inbox-hdr">
-      <span class="inbox-title">Inbox</span>
-      <span class="badge" id="inbox-count">0</span>
-      <button class="btn-clr" onclick="clearInbox()">Clear</button>
-    </div>
-    <div class="packets" id="packets">
-      <div class="empty-state" id="empty"><span>📭</span>Nothing yet. Start listening and send something from your phone.</div>
-    </div>
-  </div>
-
-</div>
-
-<script>
-// ─────────────────────────────────────────────
-// State
-// ─────────────────────────────────────────────
-let mode = 'send';
-let peer = null;
-let conn = null;         // sender side connection
-let recvPeer = null;     // receiver Peer instance
-let recvConns = [];      // receiver incoming connections
-let isListening = false;
-let selectedFile = null;
-let inboxCount = 0;
-let fileChunks = {};     // for chunked file transfer
-
-const CHUNK = 64 * 1024; // 64 KB chunks
-
-// ─────────────────────────────────────────────
-// Mode switch
-// ─────────────────────────────────────────────
-function setMode(m) {
-  mode = m;
-  document.getElementById('panel-send').style.display = m === 'send' ? '' : 'none';
-  document.getElementById('panel-recv').style.display = m === 'recv' ? '' : 'none';
-  document.getElementById('btn-mode-send').classList.toggle('active', m === 'send');
-  document.getElementById('btn-mode-recv').classList.toggle('active', m === 'recv');
-  if (m === 'recv' && !recvPeer) initReceiver();
-}
-
-// ─────────────────────────────────────────────
-// RECEIVER
-// ─────────────────────────────────────────────
-function initReceiver() {
-  const id = makeId();
-  document.getElementById('r-room').value = id;
-  setPill('r', 'wait', 'Connecting to relay…');
-
-  recvPeer = new Peer(id, { debug: 0 });
-
-  recvPeer.on('open', () => {
-    setPill('r', 'wait', 'Ready — waiting for sender');
-    setRStatus('Enter the Room ID on your phone then press Send', 'info');
-  });
-
-  recvPeer.on('connection', (c) => {
-    recvConns.push(c);
-    setPill('r', 'on', 'Sender connected!');
-    setRStatus('🟢 Sender connected', 'ok');
-
-    c.on('data', (raw) => {
-      handleIncoming(raw);
-    });
-    c.on('close', () => {
-      setPill('r', 'wait', 'Sender disconnected — waiting…');
-      setRStatus('Sender disconnected. You can still receive from another device.', '');
-    });
-    c.on('error', (e) => {
-      setRStatus('Connection error: ' + e, 'err');
-    });
-  });
-
-  recvPeer.on('error', (e) => {
-    setPill('r', 'err', 'Error: ' + e.type);
-    setRStatus('Relay error — try refreshing', 'err');
-  });
-
-  recvPeer.on('disconnected', () => {
-    setPill('r', 'err', 'Disconnected');
-    recvPeer.reconnect();
-  });
-}
-
-function newRoom() {
-  if (recvPeer) { recvPeer.destroy(); recvPeer = null; }
-  fileChunks = {};
-  initReceiver();
-}
-
-function copyRoomId() {
-  const v = document.getElementById('r-room').value;
-  if (!v) return;
-  navigator.clipboard.writeText(v).then(() => {
-    setRStatus('Room ID copied! Paste it on your phone.', 'ok');
-    setTimeout(() => setRStatus('', ''), 3000);
-  });
-}
-
-// toggle — just for UI feedback, listener is always on once initiated
-function toggleListen() {
-  const btn = document.getElementById('btn-listen');
-  isListening = !isListening;
-  if (isListening) {
-    btn.textContent = '■ Stop Listening';
-    btn.classList.add('listening');
-    if (!recvPeer) initReceiver();
-    setRStatus('Listening for incoming packets…', 'info');
-  } else {
-    btn.textContent = '▶ Start Listening';
-    btn.classList.remove('listening');
-    setRStatus('Stopped.', '');
-  }
-}
-
-// ─────────────────────────────────────────────
-// SENDER
-// ─────────────────────────────────────────────
-function connectToRoom(roomId) {
-  if (peer) { peer.destroy(); peer = null; }
-  const myId = makeId();
-  peer = new Peer(myId, { debug: 0 });
-  peer.on('open', () => {
-    conn = peer.connect(roomId, { reliable: true });
-    setPill('s', 'wait', 'Connecting…');
-
-    conn.on('open', () => {
-      setPill('s', 'on', 'Connected to ' + roomId);
-      setSStatus('🟢 Connected — ready to send', 'ok');
-    });
-    conn.on('error', (e) => {
-      setPill('s', 'err', 'Connection error');
-      setSStatus('Error: ' + e, 'err');
-    });
-    conn.on('close', () => {
-      setPill('s', 'err', 'Disconnected');
-      setSStatus('Connection closed.', 'err');
-    });
-  });
-  peer.on('error', (e) => {
-    setPill('s', 'err', 'Peer error');
-    setSStatus('Error: ' + e.type + ' — check the Room ID', 'err');
-  });
-}
-
-document.getElementById('s-room').addEventListener('change', () => {
-  const v = document.getElementById('s-room').value.trim().toUpperCase();
-  document.getElementById('s-room').value = v;
-  if (v.length >= 4) connectToRoom(v);
-});
-document.getElementById('s-room').addEventListener('keydown', (e) => {
-  if (e.key === 'Enter') {
-    const v = document.getElementById('s-room').value.trim().toUpperCase();
-    if (v.length >= 4) connectToRoom(v);
-  }
-});
-
-async function doSend() {
-  if (!conn || !conn.open) {
-    const room = document.getElementById('s-room').value.trim().toUpperCase();
-    if (!room) { setSStatus('Enter the Room ID from your PC first', 'err'); return; }
-    connectToRoom(room);
-    setSStatus('Connecting… try again in a moment', 'info');
-    return;
-  }
-
-  const msg = document.getElementById('s-msg').value.trim();
-  const file = selectedFile;
-
-  if (!msg && !file) { setSStatus('Nothing to send — add text or a file', 'err'); return; }
-
-  const btn = document.getElementById('btn-send');
-  btn.disabled = true;
-
-  try {
-    if (msg) {
-      conn.send({ type: 'text', ts: Date.now(), msg });
-    }
-
-    if (file) {
-      if (file.size > 50 * 1024 * 1024) { setSStatus('File too large (max 50 MB)', 'err'); btn.disabled = false; return; }
-      await sendFileChunked(file);
-    }
-
-    btn.textContent = '✅ Sent!';
-    btn.classList.add('ok');
-    setSStatus('Delivered!', 'ok');
-
-    setTimeout(() => {
-      btn.textContent = '⚡ Send to PC';
-      btn.classList.remove('ok');
-      btn.disabled = false;
-      document.getElementById('s-msg').value = '';
-      clearFile();
-      setSStatus('', '');
-    }, 2500);
-
-  } catch(e) {
-    setSStatus('Send error: ' + e.message, 'err');
-    btn.disabled = false;
-    showProg(false);
-  }
-}
-
-async function sendFileChunked(file) {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => {
-      const buf = reader.result;
-      const total = Math.ceil(buf.byteLength / CHUNK);
-      const uid = Math.random().toString(36).slice(2);
-
-      // header
-      conn.send({ type: 'file-start', uid, name: file.name, mime: file.type, size: file.size, total });
-
-      showProg(true);
-      let i = 0;
-
-      function sendNext() {
-        if (i >= total) {
-          conn.send({ type: 'file-end', uid });
-          showProg(false);
-          resolve();
-          return;
+        // Initialize Game
+        function initializeGame() {
+            resetGameState();
+            renderBoard();
+            renderPawns();
+            updateUI();
         }
-        const chunk = buf.slice(i * CHUNK, (i + 1) * CHUNK);
-        conn.send({ type: 'file-chunk', uid, index: i, data: chunk });
-        const pct = Math.round(((i + 1) / total) * 100);
-        document.getElementById('prog-fill').style.width = pct + '%';
-        document.getElementById('prog-lbl').textContent = `Sending ${file.name} — ${pct}%`;
-        i++;
-        // Use setTimeout to avoid blocking UI
-        setTimeout(sendNext, 1);
-      }
-      sendNext();
-    };
-    reader.onerror = reject;
-    reader.readAsArrayBuffer(file);
-  });
-}
 
-// ─────────────────────────────────────────────
-// INCOMING packet handling (receiver side)
-// ─────────────────────────────────────────────
-function handleIncoming(raw) {
-  if (!isListening) return; // ignore if stopped
+        function resetGameState() {
+            gameState = {
+                currentPlayer: 0,
+                diceValue: 0,
+                playerPawns: {
+                    red: [0, -1, -1, -1],
+                    blue: [0, -1, -1, -1],
+                    yellow: [0, -1, -1, -1],
+                    green: [0, -1, -1, -1]
+                },
+                playerHomes: {
+                    red: [],
+                    blue: [],
+                    yellow: [],
+                    green: []
+                },
+                winner: null,
+                canRoll: true,
+                lastDiceValue: 0
+            };
+        }
 
-  if (raw.type === 'text') {
-    renderText(raw);
-    notifyNew('Message', raw.msg);
-  }
-  else if (raw.type === 'file-start') {
-    fileChunks[raw.uid] = { name: raw.name, mime: raw.mime, size: raw.size, total: raw.total, chunks: [] };
-  }
-  else if (raw.type === 'file-chunk') {
-    const fc = fileChunks[raw.uid];
-    if (fc) { fc.chunks[raw.index] = raw.data; }
-  }
-  else if (raw.type === 'file-end') {
-    const fc = fileChunks[raw.uid];
-    if (fc) {
-      const blob = new Blob(fc.chunks, { type: fc.mime });
-      renderFile(fc.name, fc.mime, blob);
-      notifyNew('File: ' + fc.name, fc.name);
-      delete fileChunks[raw.uid];
-    }
-  }
-}
+        // Render Board
+        function renderBoard() {
+            const board = document.getElementById('board');
+            board.innerHTML = '';
 
-function renderText(data) {
-  removeEmpty();
-  inboxCount++;
-  document.getElementById('inbox-count').textContent = inboxCount;
+            for (let i = 0; i < BOARD_SIZE * BOARD_SIZE; i++) {
+                const cell = document.createElement('div');
+                cell.className = 'cell';
+                cell.id = `cell-${i}`;
 
-  const ts = new Date(data.ts);
-  const div = document.createElement('div');
-  div.className = 'pkt fresh';
-  const mid = 'msg-' + inboxCount;
-  const esc = data.msg.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-  div.innerHTML = `
-    <div class="pkt-top"><span class="pkt-ico">💬</span><span class="pkt-time">${fmtTime(ts)}</span><span class="pkt-new">NEW</span></div>
-    <div class="pkt-msg" id="${mid}">${esc}</div>
-    <button class="btn-cp" onclick="cpText('${mid}',this)">📋 Copy</button>
-  `;
-  document.getElementById('packets').prepend(div);
-  setTimeout(() => div.classList.remove('fresh'), 5000);
-}
+                // Add special cell classes
+                if (isCellInPath(i)) {
+                    cell.classList.add('path');
+                }
 
-function renderFile(name, mime, blob) {
-  removeEmpty();
-  inboxCount++;
-  document.getElementById('inbox-count').textContent = inboxCount;
+                // Mark home cells
+                const homeCell = findHomeCellPlayer(i);
+                if (homeCell) {
+                    cell.classList.add('home', homeCell);
+                }
 
-  const url = URL.createObjectURL(blob);
-  const isImg = mime && mime.startsWith('image/');
-  const ico = fileEmoji(mime);
+                // Mark finish line cells
+                if (isCellInFinishLine(i)) {
+                    cell.classList.add('finish');
+                }
 
-  const div = document.createElement('div');
-  div.className = 'pkt fresh';
-  div.innerHTML = `
-    <div class="pkt-top"><span class="pkt-ico">${ico}</span><span class="pkt-time">${fmtTime(new Date())}</span><span class="pkt-new">NEW</span></div>
-    <div class="pkt-file">
-      <span class="pkt-file-ico">${ico}</span>
-      <div class="pkt-finfo">
-        <div class="pkt-fname">${escHtml(name)}</div>
-        <div class="pkt-ftype">${escHtml(mime)}</div>
-      </div>
-      <a class="btn-dl" href="${url}" download="${escHtml(name)}" target="_blank">⬇ Save</a>
-    </div>
-    ${isImg ? `<img class="pkt-img" src="${url}" alt="${escHtml(name)}" loading="lazy">` : ''}
-  `;
-  document.getElementById('packets').prepend(div);
-  setTimeout(() => div.classList.remove('fresh'), 5000);
-}
+                board.appendChild(cell);
+            }
+        }
 
-// ─────────────────────────────────────────────
-// File picker
-// ─────────────────────────────────────────────
-window.onFile = function(file) {
-  if (!file) return;
-  selectedFile = file;
-  document.getElementById('fbar').classList.add('show');
-  document.getElementById('fbar-ico').textContent = fileEmoji(file.type);
-  document.getElementById('fbar-name').textContent = file.name;
-  document.getElementById('fbar-size').textContent = fmtSize(file.size);
+        function findHomeCellPlayer(cellIndex) {
+            const row = Math.floor(cellIndex / BOARD_SIZE);
+            const col = cellIndex % BOARD_SIZE;
 
-  const pre = document.getElementById('img-pre');
-  if (file.type.startsWith('image/')) {
-    pre.src = URL.createObjectURL(file);
-    pre.classList.add('show');
-  } else { pre.classList.remove('show'); }
-};
+            for (const player of PLAYERS) {
+                const homePos = HOME_POSITIONS[player];
+                if (row >= homePos.row && row < homePos.row + homePos.size &&
+                    col >= homePos.col && col < homePos.col + homePos.size) {
+                    return player;
+                }
+            }
+            return null;
+        }
 
-window.clearFile = function() {
-  selectedFile = null;
-  document.getElementById('fbar').classList.remove('show');
-  document.getElementById('img-pre').classList.remove('show');
-  document.getElementById('file-in').value = '';
-};
+        function isCellInPath(cellIndex) {
+            const row = Math.floor(cellIndex / BOARD_SIZE);
+            const col = cellIndex % BOARD_SIZE;
 
-// drag & drop
-const dz = document.getElementById('dz');
-dz.addEventListener('dragover', e => { e.preventDefault(); dz.classList.add('over'); });
-dz.addEventListener('dragleave', () => dz.classList.remove('over'));
-dz.addEventListener('drop', e => { e.preventDefault(); dz.classList.remove('over'); if (e.dataTransfer.files[0]) onFile(e.dataTransfer.files[0]); });
+            // Mark main path
+            if (row === 7 || col === 7) return true;
 
-// ─────────────────────────────────────────────
-// Inbox controls
-// ─────────────────────────────────────────────
-window.clearInbox = function() {
-  document.querySelectorAll('.pkt').forEach(p => p.remove());
-  inboxCount = 0;
-  document.getElementById('inbox-count').textContent = '0';
-  document.getElementById('empty').style.display = '';
-};
+            return false;
+        }
 
-window.cpText = function(id, btn) {
-  const el = document.getElementById(id);
-  if (!el) return;
-  navigator.clipboard.writeText(el.textContent).then(() => {
-    btn.textContent = '✅ Copied!';
-    setTimeout(() => btn.textContent = '📋 Copy', 2000);
-  });
-};
+        function isCellInFinishLine(cellIndex) {
+            return false; // Simplified for this version
+        }
 
-function removeEmpty() {
-  const e = document.getElementById('empty');
-  if (e) e.style.display = 'none';
-}
+        // Render Pawns
+        function renderPawns() {
+            const container = document.getElementById('pawns-container');
+            container.innerHTML = '';
 
-// ─────────────────────────────────────────────
-// Notifications
-// ─────────────────────────────────────────────
-function notifyNew(title, body) {
-  if (!('Notification' in window)) return;
-  if (Notification.permission === 'default') Notification.requestPermission();
-  if (Notification.permission === 'granted') {
-    new Notification('DropBeam — ' + title, { body: String(body).slice(0, 80) });
-  }
-}
+            for (const player of PLAYERS) {
+                const pawns = gameState.playerPawns[player];
+                pawns.forEach((position, pawnIndex) => {
+                    const pawn = document.createElement('div');
+                    pawn.className = `pawn ${player}`;
+                    pawn.id = `pawn-${player}-${pawnIndex}`;
+                    pawn.textContent = pawnIndex + 1;
 
-// ─────────────────────────────────────────────
-// Helpers
-// ─────────────────────────────────────────────
-function makeId() {
-  const c = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-  return 'DB-' + Array.from({length:6}, () => c[Math.floor(Math.random()*c.length)]).join('');
-}
+                    if (position === -1) {
+                        // In home
+                        const homePos = HOME_POSITIONS[player];
+                        const homeIndex = gameState.playerHomes[player].indexOf(pawnIndex);
+                        const cellRow = homePos.row + Math.floor(homeIndex / 2);
+                        const cellCol = homePos.col + (homeIndex % 2);
+                    } else {
+                        // On board
+                        const cellIndex = position;
+                    }
 
-function setPill(side, state, txt) {
-  const el = document.getElementById(side + '-pill');
-  const tEl = document.getElementById(side + '-pill-txt');
-  el.className = 'pill ' + state;
-  tEl.textContent = txt;
-}
+                    const boardContainer = document.querySelector('.board-container');
+                    const cellPos = getCellPosition(position, player, pawnIndex);
+                    pawn.style.left = cellPos.x + 'px';
+                    pawn.style.top = cellPos.y + 'px';
 
-function setSStatus(txt, cls) {
-  const el = document.getElementById('s-status');
-  el.textContent = txt; el.className = 'status-msg ' + (cls||'');
-}
-function setRStatus(txt, cls) {
-  const el = document.getElementById('r-status');
-  el.textContent = txt; el.className = 'status-msg ' + (cls||'');
-}
-function showProg(show) {
-  document.getElementById('prog-wrap').classList.toggle('show', show);
-  if (!show) { document.getElementById('prog-fill').style.width = '0%'; }
-}
-function fmtTime(d) { return d.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}); }
-function fmtSize(b) {
-  if (b < 1024) return b + ' B';
-  if (b < 1048576) return (b/1024).toFixed(1) + ' KB';
-  return (b/1048576).toFixed(2) + ' MB';
-}
-function fileEmoji(t) {
-  if (!t) return '📄';
-  if (t.startsWith('image/')) return '🖼️';
-  if (t.startsWith('video/')) return '🎬';
-  if (t.startsWith('audio/')) return '🎵';
-  if (t.includes('pdf')) return '📕';
-  if (t.includes('zip')||t.includes('rar')||t.includes('7z')) return '🗜️';
-  if (t.includes('word')||t.includes('doc')) return '📝';
-  if (t.includes('sheet')||t.includes('excel')||t.includes('csv')) return '📊';
-  return '📄';
-}
-function escHtml(s) {
-  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-}
-</script>
+                    container.appendChild(pawn);
+                });
+            }
+        }
+
+        function getCellPosition(position, player, pawnIndex) {
+            const boardContainer = document.querySelector('.board-container');
+            const cellSize = 600 / BOARD_SIZE;
+
+            if (position === -1) {
+                const homePos = HOME_POSITIONS[player];
+                const homeIndex = gameState.playerHomes[player].indexOf(pawnIndex);
+                const row = homePos.row + Math.floor(homeIndex / 2);
+                const col = homePos.col + (homeIndex % 2);
+                return {
+                    x: col * cellSize + cellSize / 4,
+                    y: row * cellSize + cellSize / 4
+                };
+            }
+
+            const row = Math.floor(position / BOARD_SIZE);
+            const col = position % BOARD_SIZE;
+            return {
+                x: col * cellSize + cellSize / 4,
+                y: row * cellSize + cellSize / 4
+            };
+        }
+
+        // Roll Dice
+        function rollDice() {
+            if (!gameState.canRoll || gameState.winner) {
+                showMessage('Cannot roll now!', 'error');
+                return;
+            }
+
+            gameState.diceValue = Math.floor(Math.random() * 6) + 1;
+            gameState.lastDiceValue = gameState.diceValue;
+
+            const dice = document.getElementById('dice');
+            dice.style.animation = 'none';
+            setTimeout(() => {
+                dice.textContent = getDiceEmoji(gameState.diceValue);
+                dice.style.animation = 'spin 0.5s ease-out';
+            }, 10);
+
+            showMessage(`${PLAYERS[gameState.currentPlayer].toUpperCase()} rolled a ${gameState.diceValue}!`, 'info');
+            updateDiceResult();
+
+            // Check if any pawn can be moved
+            setTimeout(() => {
+                updateUI();
+            }, 500);
+        }
+
+        function getDiceEmoji(value) {
+            const diceEmojis = ['⬜', '1️⃣', '2️⃣', '3️⃣', '4️⃣', '5️⃣', '6️⃣'];
+            return diceEmojis[value] || value;
+        }
+
+        function updateDiceResult() {
+            document.getElementById('diceResult').textContent = `Dice: ${gameState.diceValue}`;
+        }
+
+        // Move Pawn
+        function movePawn(player, pawnIndex) {
+            if (PLAYERS[gameState.currentPlayer] !== player) {
+                showMessage('Not your turn!', 'error');
+                return;
+            }
+
+            const currentPos = gameState.playerPawns[player][pawnIndex];
+            const newPos = currentPos + gameState.diceValue;
+
+            // Check if pawn can move
+            if (currentPos === -1) {
+                // Pawn in home - needs to roll a 6 to move
+                if (gameState.diceValue === 6) {
+                    gameState.playerPawns[player][pawnIndex] = PLAYER_START_CELLS[player];
+                    showMessage(`${player.toUpperCase()} pawn moved to start!`, 'success');
+                } else {
+                    showMessage('Need a 6 to move pawn from home!', 'error');
+                    return;
+                }
+            } else if (newPos <= CELLS_PER_PLAYER * 4) {
+                gameState.playerPawns[player][pawnIndex] = newPos;
+                showMessage(`${player.toUpperCase()} pawn moved!`, 'success');
+
+                // Check if reached finish line
+                if (newPos >= CELLS_PER_PLAYER * 4 - FINISH_LINE_CELLS) {
+                    checkWin();
+                }
+            }
+
+            gameState.diceValue = 0;
+            if (gameState.lastDiceValue !== 6) {
+                nextPlayer();
+            } else {
+                showMessage(`${player.toUpperCase()} rolled a 6! Roll again!`, 'info');
+            }
+
+            renderPawns();
+            updateUI();
+        }
+
+        function checkWin() {
+            const player = PLAYERS[gameState.currentPlayer];
+            const pawns = gameState.playerPawns[player];
+            const allAtFinish = pawns.every(p => p >= CELLS_PER_PLAYER * 4 - FINISH_LINE_CELLS || p === -1);
+
+            if (allAtFinish) {
+                gameState.winner = player;
+                showMessage(`🎉 ${player.toUpperCase()} WINS! 🎉`, 'success');
+            }
+        }
+
+        function nextPlayer() {
+            gameState.currentPlayer = (gameState.currentPlayer + 1) % PLAYERS.length;
+            gameState.canRoll = true;
+            updateUI();
+        }
+
+        // UI Updates
+        function updateUI() {
+            updateCurrentPlayer();
+            updatePlayerStatus();
+        }
+
+        function updateCurrentPlayer() {
+            const player = PLAYERS[gameState.currentPlayer];
+            const playerColorSpan = document.getElementById('playerColor');
+            const currentPlayerDiv = document.getElementById('currentPlayer');
+            playerColorSpan.textContent = player.charAt(0).toUpperCase() + player.slice(1);
+            currentPlayerDiv.className = `current-player ${player}`;
+
+            const rollBtn = document.getElementById('rollBtn');
+            if (gameState.winner) {
+                rollBtn.classList.add('disabled');
+                rollBtn.textContent = 'Game Over';
+            } else {
+                rollBtn.classList.remove('disabled');
+                rollBtn.textContent = 'Roll Dice';
+            }
+        }
+
+        function updatePlayerStatus() {
+            const statusDiv = document.getElementById('playerStatus');
+            statusDiv.innerHTML = '';
+
+            for (const player of PLAYERS) {
+                const pawns = gameState.playerPawns[player];
+                const pawnStatus = pawns.map((p, i) => {
+                    if (p === -1) return `P${i + 1}: Home`;
+                    return `P${i + 1}: ${p}`;
+                }).join(' | ');
+
+                const statusItem = document.createElement('div');
+                statusItem.className = `player-status-item ${player}`;
+                statusItem.textContent = `${player.toUpperCase()}: ${pawnStatus}`;
+                statusDiv.appendChild(statusItem);
+            }
+        }
+
+        function showMessage(message, type = 'info') {
+            const msgDiv = document.getElementById('message');
+            msgDiv.textContent = message;
+            msgDiv.className = `message ${type}`;
+            setTimeout(() => {
+                msgDiv.textContent = '';
+                msgDiv.className = 'message';
+            }, 3000);
+        }
+
+        function resetGame() {
+            initializeGame();
+            showMessage('New game started!', 'success');
+        }
+
+        // CSS Animation for dice
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes spin {
+                0% { transform: rotateX(0deg) rotateY(0deg); }
+                100% { transform: rotateX(360deg) rotateY(360deg); }
+            }
+        `;
+        document.head.appendChild(style);
+
+        // Initialize on load
+        window.addEventListener('load', initializeGame);
+    </script>
 </body>
 </html>
